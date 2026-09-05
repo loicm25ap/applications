@@ -30,9 +30,13 @@ main{max-width:560px;margin:0 auto;padding:12px 12px 40px}.screen{display:none}.
 .form{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
 .form input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;margin-bottom:8px}
 .sex{display:flex;gap:8px;margin-bottom:8px}.sex button{flex:1}.sex button.on.girl{border-color:var(--girl);color:var(--girl)}.sex button.on.boy{border-color:var(--boy);color:var(--boy)}
-.child-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.child-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
 .hint{color:var(--muted);font-size:12px;line-height:1.45}
 h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
+.row-btns{display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-top:8px}
+.btn.sm{min-height:38px;padding:8px 10px;font-size:13px;flex:1}
+.btn.danger{border-color:var(--inj);color:#e8c4c4}
+#btnCancel{display:none;margin-top:8px}
 .linkish{color:var(--gold);border:none;background:none;min-height:auto;padding:0;font-size:13px}
 </style></head><body>
 <header><h1>Présences Maternelle</h1><div class="date-big" id="dateBig">—</div><div class="date-sub" id="dateSub"></div></header>
@@ -59,7 +63,7 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 <section class="screen" id="screen-classe">
 <div class="form"><input id="first" placeholder="Prénom" autocomplete="off"/><input id="last" placeholder="Nom" autocomplete="off"/>
 <div class="sex"><button class="btn on girl" id="sexF">Fille</button><button class="btn boy" id="sexM">Garçon</button></div>
-<button class="btn gold full" id="btnAdd">Ajouter l'enfant</button></div>
+<button class="btn gold full" id="btnAdd">Ajouter l'enfant</button><button class="btn full" id="btnCancel">Annuler</button></div>
 <div id="roster"></div>
 <h2 style="margin-top:36px">Année scolaire</h2><p class="hint" id="yearHint"></p>
 <button class="btn warn" id="btnNewYear" style="min-height:42px;font-size:13px;padding:8px 14px">Nouvelle année scolaire</button>
@@ -80,6 +84,13 @@ function loadArchives(){try{return JSON.parse(localStorage.getItem(ARCH))||[]}ca
 function saveArchives(a){localStorage.setItem(ARCH,JSON.stringify(a))}
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{students:[],days:{}}}catch{return{students:[],days:{}}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+let editId=null;
+function setSex(g){sex=g;$("sexF").classList.toggle("on",g==="F");$("sexM").classList.toggle("on",g==="M")}
+function resetForm(){editId=null;$("first").value="";$("last").value="";setSex("F");$("btnAdd").textContent="Ajouter l'enfant";$("btnCancel").style.display="none"}
+function startEdit(id){const s=db.students.find(x=>x.id===id);if(!s)return;editId=id;$("first").value=s.first;$("last").value=s.last;setSex(s.gender==="M"?"M":"F");$("btnAdd").textContent="Enregistrer";$("btnCancel").style.display="block";window.scrollTo({top:0,behavior:"smooth"})}
+function saveStudent(){const first=$("first").value.trim(),last=$("last").value.trim();if(!first||!last){alert("Prénom et nom requis.");return}if(editId){const s=db.students.find(x=>x.id===editId);if(!s)return;s.first=first;s.last=last;s.gender=sex}else db.students.push({id:uid(),first,last,gender:sex,active:true});resetForm();save();render()}
+function deleteForever(id){const s=db.students.find(x=>x.id===id);if(!s)return;if(!confirm("Supprimer définitivement "+s.first+" "+s.last+" ?\nToutes ses présences disparaîtront des tableaux."))return;db.students=db.students.filter(x=>x.id!==id);Object.keys(db.days).forEach(k=>{const rec=db.days[k];if(rec.marks)delete rec.marks[id];if(rec.snapshot)rec.snapshot=rec.snapshot.filter(x=>x!==id)});if(editId===id)resetForm();save();render()}
+function miniBtn(label,cls,fn){const b=document.createElement("button");b.className="btn sm "+cls;b.textContent=label;b.onclick=fn;return b}
 let db=load(),sex="F",screen="jour",sel=ymd(new Date()),monthSel=sel.slice(0,7),anMonth=monthSel,anMode="month";
 function activeStudents(){return db.students.filter(s=>s.active!==false)}
 function dayRec(key){if(!db.days[key])db.days[key]={marks:{},validated:false,closed:false};return db.days[key]}
@@ -119,7 +130,7 @@ $("monthSchool").querySelectorAll(".child-card").forEach((el,i)=>{el.onclick=()=
 }
 function renderClasse(){
 const box=$("roster");box.innerHTML="";if(!db.students.length)box.innerHTML="<p class='hint'>Pas encore d'élève.</p>";
-[...db.students].sort(byName).forEach(s=>{const card=document.createElement("div");card.className="child-card";const left=document.createElement("div");left.innerHTML="<div class='nm "+(s.gender==="F"?"girl":"boy")+"'>"+s.first+" "+s.last+"</div><div class='hint'>"+(s.gender==="F"?"Fille":"Gar\u00e7on")+(s.active===false?" \u00b7 retir\u00e9":"")+"</div>";const tog=document.createElement("button");tog.className="btn";tog.style.minHeight="42px";tog.style.fontSize="13px";tog.textContent=s.active===false?"Réintégrer":"Retirer";tog.onclick=()=>{s.active=s.active===false;save();render()};const right=document.createElement("div");right.appendChild(tog);card.append(left,right);box.appendChild(card)});
+[...db.students].sort(byName).forEach(s=>{const card=document.createElement("div");card.className="child-card";const left=document.createElement("div");left.style.flex="1";left.innerHTML="<div class='nm "+(s.gender==="F"?"girl":"boy")+"'>"+s.first+" "+s.last+"</div><div class='hint'>"+(s.gender==="F"?"Fille":"Gar\u00e7on")+(s.active===false?" \u00b7 retir\u00e9":"")+"</div>";const btns=document.createElement("div");btns.className="row-btns";btns.append(miniBtn("Modifier","gold",()=>startEdit(s.id)),miniBtn(s.active===false?"Réintégrer":"Retirer","",()=>{s.active=s.active===false;save();render()}),miniBtn("Supprimer définitivement","danger",()=>deleteForever(s.id)));card.append(left,btns);box.appendChild(card)});
 const y=schoolYearOf(sel);$("yearHint").textContent="Année en cours : "+y.label+" (1er sept. "+y.start.slice(0,4)+" → 31 août "+y.end.slice(0,4)+".";
 const arch=loadArchives();$("archives").innerHTML=arch.length?"<h2>Archives</h2>"+arch.map(a=>"<div class='child-card'><div>"+a.label+" \u00b7 "+(a.students||[]).length+" enfants</div></div>").join(""):"";
 }
@@ -145,9 +156,7 @@ $("btnThisMonth").onclick=()=>{monthSel=ymd(new Date()).slice(0,7);renderMois()}
 $("anMonthPick").onchange=()=>{if($("anMonthPick").value){anMonth=$("anMonthPick").value;anMode="month";renderAnalyse()}};
 $("btnAnMonth").onclick=()=>{anMonth=ymd(new Date()).slice(0,7);anMode="month";renderAnalyse()};
 $("btnAnYear").onclick=()=>{anMode="year";renderAnalyse()};
-$("sexF").onclick=()=>{sex="F";$("sexF").classList.add("on");$("sexM").classList.remove("on")};
-$("sexM").onclick=()=>{sex="M";$("sexM").classList.add("on");$("sexF").classList.remove("on")};
-$("btnAdd").onclick=()=>{const first=$("first").value.trim(),last=$("last").value.trim();if(!first||!last){alert("Prénom et nom requis.");return}db.students.push({id:uid(),first,last,gender:sex,active:true});$("first").value="";$("last").value="";save();render()};
+$("btnAdd").onclick=saveStudent;$("btnCancel").onclick=resetForm;$("sexF").onclick=()=>setSex("F");$("sexM").onclick=()=>setSex("M");
 $("btnValid").onclick=()=>{if(isWeekend(sel))return;const kids=activeStudents();if(!kids.length){alert("Ajoutez d'abord les enfants.");return}const rec=dayRec(sel);if(rec.closed)return;const rm=computeHalf(rec,kids,"M"),rs=computeHalf(rec,kids,"S");if(rm.missing||rs.missing){alert("Notez matin et après-midi pour chaque enfant.");return}rec.validated=true;rec.closed=false;rec.snapshot=kids.map(s=>s.id);save();render()};
 $("btnCorrect").onclick=()=>{const rec=dayRec(sel);if(rec.closed){if(!confirm("Remettre ce jour comme jour d'école à saisir ?"))return;rec.closed=false;save();render();return}if(!rec.validated)return;if(!confirm("Rouvrir la journée ?"))return;rec.validated=false;save();render()};
 $("btnOff").onclick=()=>{if(isWeekend(sel))return;if(!confirm("Marquer "+longDate(sel)+" comme jour sans école ?"))return;const rec=dayRec(sel);rec.closed=true;rec.validated=false;save();render()};
