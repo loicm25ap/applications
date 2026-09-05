@@ -52,7 +52,7 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 </section>
 <section class="screen" id="screen-analyse">
 <div class="pick"><input type="month" id="anMonthPick"/><button class="btn gold" id="btnAnMonth">Mois en cours</button></div>
-<button class="btn full" id="btnAnYear">Année</button>
+<button class="btn full" id="btnAnYear" style="margin-bottom:16px">Année</button>
 <div class="summary"><div class="rate pending" id="anRate">—</div><div class="meta" id="anHead">—</div></div>
 <h2>Jours d'école de la période</h2><div id="chart"></div><h2>Par enfant</h2><div id="byChild"></div><h2>Jours à regarder</h2><div id="flags"></div>
 <div class="actions"><button class="btn gold full" id="btnXls">Exporter Excel (CSV)</button></div>
@@ -62,9 +62,9 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 <div class="sex"><button class="btn on girl" id="sexF">Fille</button><button class="btn boy" id="sexM">Garçon</button></div>
 <button class="btn gold full" id="btnAdd">Ajouter l'enfant</button></div>
 <div id="roster"></div>
-<h2>Année scolaire</h2><p class="hint" id="yearHint"></p>
-<button class="btn warn full" id="btnNewYear">Nouvelle année scolaire</button>
-<p class="hint">1er septembre → 31 août. En septembre 2027 : exporter le CSV, puis ce bouton. La classe est archivée, l'appli redevient vide.</p>
+<h2 style="margin-top:36px">Année scolaire</h2><p class="hint" id="yearHint"></p>
+<button class="btn warn" id="btnNewYear" style="min-height:42px;font-size:13px;padding:8px 14px">Nouvelle année scolaire</button>
+<p class="hint">1er septembre → 31 août. En septembre 2027 : exporter le CSV, par ce bouton. La classe est archivée, l'appli redevient vide.</p>
 <div id="archives"></div>
 </section></main>
 <script>
