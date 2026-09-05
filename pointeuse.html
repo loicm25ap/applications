@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0e0f10"/>
+<title>Pointeuse</title>
+<style>
+:root{--bg:#0e0f10;--panel:#17191b;--panel-2:#1e2124;--line:#2a2e32;--text:#e8e6e1;--muted:#9a958c;--gold:#c4a574;--gold-dim:#8a7349;--go:#3d7a5a;--stop:#8a4a45}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+h1{margin:0;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}.clock{color:var(--muted);font-size:12px}
+main{max-width:560px;margin:0 auto;padding:12px}
+.now{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;position:sticky;top:0}
+.label{color:var(--muted);font-size:11px;text-transform:uppercase}.task{font-size:20px;margin:4px 0}.elapsed{font-size:34px;font-weight:600;color:var(--gold)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.task-btn{background:var(--panel-2);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:18px 10px;font-size:16px;min-height:72px;width:100%}
+.task-btn.active{background:#243328;border-color:var(--go);color:#d7eadc}
+.row-btns{display:flex;gap:8px;margin-bottom:12px}
+button,.icon-btn{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;padding:12px 14px;font-size:15px;min-height:48px}
+.btn-stop{border-color:var(--stop);color:#f0d0cd;flex:1}.btn-gold{border-color:var(--gold-dim);color:var(--gold)}.btn-interrupt{flex:1}.btn-edit{width:100%}.btn-edit.on{border-color:var(--gold-dim);color:var(--gold)}
+.edit-panel{display:none;margin-bottom:14px}body.editing .edit-panel{display:block}body.editing .grid,body.editing .row-btns{display:none}
+.edit-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;margin-bottom:8px}
+.edit-item input,.add input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:12px;font-size:16px}
+.edit-tools{display:flex;gap:6px}.icon-btn{min-width:48px;padding:0;font-size:18px}.icon-btn.danger{border-color:var(--stop);color:#f0d0cd}
+.add{display:flex;gap:8px;margin-top:10px}.add input{flex:1}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px 4px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:11px;text-transform:uppercase}
+.totals{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+h2,.totals h2{font-size:12px;color:var(--muted);text-transform:uppercase;margin:16px 0 8px}.totals h2{margin:0 0 8px}
+.hint{color:var(--muted);font-size:12px;margin-top:12px}.del-log{color:var(--muted);border:none;background:none;min-height:36px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.bar button{flex:1;min-width:140px}
+</style></head><body>
+<header><h1>Pointeuse</h1><div class="clock" id="clock"></div></header>
+<main>
+<div class="now"><div class="label">En cours</div><div class="task" id="currentTask">— arrêté —</div><div class="elapsed" id="elapsed">00:00:00</div></div>
+<div class="grid" id="buttons"></div>
+<div class="row-btns"><button class="btn-stop" id="btnStop">Stop</button><button class="btn-interrupt" id="btnInterrupt">Interruption</button></div>
+<button class="btn-edit" id="btnEdit">Modifier les tâches</button>
+<div class="edit-panel"><div id="editList"></div><div class="add"><input id="newTask" placeholder="Nouvelle tâche" autocomplete="off"/><button class="btn-gold" id="btnAdd">Ajouter</button></div></div>
+<div class="bar"><button class="btn-gold" id="btnCopy">Copier pour Grok</button><button id="btnCsv">CSV</button><button id="btnClearDay">Vider le jour</button></div>
+<div class="totals" id="totals"></div>
+<h2>Journal du jour</h2>
+<table><thead><tr><th>Début</th><th>Fin</th><th>Durée</th><th>Tâche</th><th></th></tr></thead><tbody id="log"></tbody></table>
+<p class="hint">Heures sur ce téléphone seulement. Modifier : renommer, ordre, supprimer.</p>
+</main>
+<script>
+const DEFAULT_TASKS=["Tâche A","Tâche B","Admin","Réunion"];const $=id=>document.getElementById(id);
+function load(k,f){try{const v=JSON.parse(localStorage.getItem(k));return v??f}catch{return f}}
+function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function todayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+let tasks=load("p_tasks",DEFAULT_TASKS),current=load("p_current",null),logsByDay=load("p_logs",{}),editing=false;
+if(!logsByDay[todayKey()])logsByDay[todayKey()]=[];
+function fmt(ms){if(ms<0)ms=0;const s=Math.floor(ms/1000);return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function hm(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
+function persist(){save("p_tasks",tasks);save("p_current",current);save("p_logs",logsByDay)}
+function stopCurrent(){if(!current)return;logsByDay[todayKey()].push({task:current.task,start:current.start,end:Date.now()});current=null;persist()}
+function startTask(name){if(editing)return;if(current&&current.task===name)return;stopCurrent();current={task:name,start:Date.now()};persist();render()}
+function renderButtons(){const box=$("buttons");box.innerHTML="";tasks.forEach(name=>{const b=document.createElement("button");b.className="task-btn"+(current&&current.task===name?" active":"");b.textContent=name;b.onclick=()=>startTask(name);box.appendChild(b)})}
+function renderEdit(){document.body.classList.toggle("editing",editing);$("btnEdit").classList.toggle("on",editing);$("btnEdit").textContent=editing?"Terminer":"Modifier les tâches";const list=$("editList");list.innerHTML="";tasks.forEach((name,i)=>{const row=document.createElement("div");row.className="edit-item";const input=document.createElement("input");input.value=name;input.onchange=input.onblur=()=>renameTask(i,input.value);const tools=document.createElement("div");tools.className="edit-tools";const up=document.createElement("button");up.className="icon-btn";up.textContent="\u2191";up.onclick=()=>moveTask(i,-1);const down=document.createElement("button");down.className="icon-btn";down.textContent="\u2193";down.onclick=()=>moveTask(i,1);const del=document.createElement("button");del.className="icon-btn danger";del.textContent="\u00d7";del.onclick=()=>removeTask(i);tools.append(up,down,del);row.append(input,tools);list.appendChild(row)})}
+function renameTask(i,raw){const name=raw.trim();if(!name){render();return}if(tasks.includes(name)&&tasks[i]!==name){alert("Cette tâche existe déjà.");render();return}const old=tasks[i];if(old===name)return;tasks[i]=name;if(current&&current.task===old)current.task=name;persist();render()}
+function moveTask(i,dir){const j=i+dir;if(j<0||j>=tasks.length)return;const t=tasks[i];tasks[i]=tasks[j];tasks[j]=t;persist();render()}
+function removeTask(i){const name=tasks[i];if(current&&current.task===name){alert("Stop d\u2019abord, puis supprimez.");return}if(!confirm("Retirer \u00ab "+name+" \u00bb ?"))return;tasks.splice(i,1);persist();render()}
+function renderLog(){const day=logsByDay[todayKey()]||[];$("log").innerHTML=day.map((row,i)=>"<tr><td>"+hm(row.start)+"</td><td>"+hm(row.end)+"</td><td>"+fmt(row.end-row.start)+"</td><td>"+row.task+"</td><td><button class='del-log' data-i='"+i+"'>\u00d7</button></td></tr>").join("");$("log").querySelectorAll(".del-log").forEach(btn=>btn.onclick=()=>{logsByDay[todayKey()].splice(Number(btn.dataset.i),1);persist();render()});const sums={};day.forEach(r=>sums[r.task]=(sums[r.task]||0)+(r.end-r.start));if(current)sums[current.task]=(sums[current.task]||0)+(Date.now()-current.start);const lines=Object.entries(sums).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+" \u2014 "+fmt(v));$("totals").innerHTML="<h2>Totaux du "+todayKey()+"</h2>"+(lines.length?lines.map(l=>"<div>"+l+"</div>").join(""):"<div>Aucune entrée</div>")}
+function renderNow(){$("clock").textContent=new Date().toLocaleString("fr-FR");if(current){$("currentTask").textContent=current.task;$("elapsed").textContent=fmt(Date.now()-current.start)}else{$("currentTask").textContent="\u2014 arrêté \u2014";$("elapsed").textContent="00:00:00"}}
+function render(){renderButtons();renderEdit();renderLog();renderNow()}
+function dayText(){const day=logsByDay[todayKey()]||[];const rows=day.map(r=>hm(r.start)+"\u2013"+hm(r.end)+"  "+fmt(r.end-r.start)+"  "+r.task);if(current)rows.push(hm(current.start)+"\u2013\u2026  en cours  "+current.task);const sums={};day.forEach(r=>sums[r.task]=(sums[r.task]||0)+(r.end-r.start));return"Journal "+todayKey()+"\n\n"+rows.join("\n")+"\n\nTotaux :\n"+Object.entries(sums).map(([k,v])=>"- "+k+" : "+fmt(v)).join("\n")+"\n\nPeux-tu faire un tableau (tâche, début, fin, durée nette) et un texte court de justification par tâche ?"}
+$("btnStop").onclick=()=>{stopCurrent();persist();render()};
+$("btnInterrupt").onclick=()=>startTask("Interruption");
+$("btnEdit").onclick=()=>{editing=!editing;render()};
+$("btnAdd").onclick=()=>{const v=$("newTask").value.trim();if(!v)return;if(tasks.includes(v)){alert("Cette tâche existe déjà.");return}tasks.push(v);$("newTask").value="";persist();render()};
+$("newTask").addEventListener("keydown",e=>{if(e.key==="Enter")$("btnAdd").click()});
+$("btnCopy").onclick=async()=>{const t=dayText();try{await navigator.clipboard.writeText(t);alert("Copié. Collez dans Grok.")}catch{prompt("Copiez :",t)}};
+$("btnCsv").onclick=()=>{const day=logsByDay[todayKey()]||[];const lines=["debut;fin;duree_sec;tache"];day.forEach(r=>lines.push(new Date(r.start).toISOString()+";"+new Date(r.end).toISOString()+";"+Math.round((r.end-r.start)/1000)+";"+r.task.replace(/;/g,",")));const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="pointeuse-"+todayKey()+".csv";a.click()};
+$("btnClearDay").onclick=()=>{if(!confirm("Effacer le journal d\u2019aujourd\u2019hui ?"))return;logsByDay[todayKey()]=[];persist();render()};
+render();setInterval(renderNow,1000);
+</script></body></html>
