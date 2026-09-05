@@ -30,8 +30,6 @@ main{max-width:560px;margin:0 auto;padding:12px 12px 40px}.screen{display:none}.
 .sex{display:flex;gap:8px;margin-bottom:8px}.sex button{flex:1}.sex button.on.girl{border-color:var(--girl);color:var(--girl)}.sex button.on.boy{border-color:var(--boy);color:var(--boy)}
 .child-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center}
 .nm.girl{color:var(--girl);font-weight:600}.nm.boy{color:var(--boy);font-weight:600}.hint{color:var(--muted);font-size:12px;line-height:1.45}
-.bar-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}.bar-row .d{width:42px;color:var(--muted)}
-.track{flex:1;height:10px;background:#222;border-radius:99px;overflow:hidden}.fill{height:100%;background:var(--gold)}.fill.low{background:var(--inj)}.fill.mid{background:var(--just)}
 h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
 .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin:8px 0 12px}.legend i{font-style:normal}
 .linkish{color:var(--gold);border:none;background:none;min-height:auto;padding:0;font-size:13px}
@@ -54,7 +52,7 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 <div class="pick"><input type="month" id="anMonthPick"/><button class="btn gold" id="btnAnMonth">Mois en cours</button></div>
 <button class="btn full" id="btnAnYear" style="margin-bottom:16px">Année</button>
 <div class="summary"><div class="rate pending" id="anRate">—</div><div class="meta" id="anHead">—</div></div>
-<h2>Jours d'école de la période</h2><div id="chart"></div><h2>Par enfant</h2><div id="byChild"></div><h2>Jours à regarder</h2><div id="flags"></div>
+<h2>Par enfant</h2><div id="byChild"></div><h2>Jours à regarder</h2><div id="flags"></div>
 <div class="actions"><button class="btn gold full" id="btnXls">Exporter Excel (CSV)</button></div>
 </section>
 <section class="screen" id="screen-classe">
@@ -80,6 +78,7 @@ function loadArchives(){try{return JSON.parse(localStorage.getItem("tps_archives
 function saveArchives(a){localStorage.setItem("tps_archives",JSON.stringify(a))}
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{students:[],days:{}}}catch{return{students:[],days:{}}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function byName(a,b){return (a.last||"").localeCompare(b.last||"","fr",{sensitivity:"base"})||(a.first||"").localeCompare(b.first||"","fr",{sensitivity:"base"})}
 let db=load(),sex="F",screen="jour",sel=ymd(new Date()),monthSel=sel.slice(0,7),anMonth=monthSel,anMode="month";
 function activeStudents(){return db.students.filter(s=>s.active!==false)}
 function dayRec(key){if(!db.days[key])db.days[key]={marks:{},validated:false,closed:false};return db.days[key]}
@@ -102,11 +101,11 @@ const r=compute(rec,kids);$("rateBig").textContent=(!kids.length||r.missing)?"\u
 $("rateMeta").textContent=kids.length?r.p+" présent"+(r.p>1?"s":"")+" / ("+r.n+" \u2212 "+r.j+" dispens\u00e9"+(r.j>1?"s":"")+")":"Ajoutez les enfants dans Classe.";
 $("lockBadge").textContent=rec.validated?"Jour d'école validé":(r.missing?r.missing+" non not\u00e9"+(r.missing>1?"s":""):"Prêt à valider");$("lockBadge").className="badge"+(rec.validated?" ok":"");
 const list=$("list");list.className=rec.validated?"locked":"";list.innerHTML="";
-kids.sort((a,b)=>(a.last+a.first).localeCompare(b.last+b.first,"fr")).forEach(s=>{const m=rec.marks[s.id]||"";const row=document.createElement("div");row.className="row"+(m?" "+m:"");const left=document.createElement("button");left.className="zone l";left.textContent="Disp.";left.onclick=()=>setMark(s.id,"J");const mid=document.createElement("button");mid.className="name-btn "+(s.gender==="F"?"girl":"boy");mid.innerHTML=s.first+" <small>"+s.last+"</small>";mid.onclick=()=>setMark(s.id,"P");const right=document.createElement("button");right.className="zone r";right.textContent="Abs.";right.onclick=()=>setMark(s.id,"I");row.append(left,mid,right);list.appendChild(row)});
+kids.sort(byName).forEach(s=>{const m=rec.marks[s.id]||"";const row=document.createElement("div");row.className="row"+(m?" "+m:"");const left=document.createElement("button");left.className="zone l";left.textContent="Disp.";left.onclick=()=>setMark(s.id,"J");const mid=document.createElement("button");mid.className="name-btn "+(s.gender==="F"?"girl":"boy");mid.innerHTML=s.first+" <small>"+s.last+"</small>";mid.onclick=()=>setMark(s.id,"P");const right=document.createElement("button");right.className="zone r";right.textContent="Abs.";right.onclick=()=>setMark(s.id,"I");row.append(left,mid,right);list.appendChild(row)});
 }
 function setMark(id,val){const rec=dayRec(sel);if(rec.validated||rec.closed)return;rec.marks[id]=rec.marks[id]===val?"":val;save();renderJour()}
 function renderMois(){
-$("monthPick").value=monthSel;const keys=daysInMonth(monthSel);let school=0,pSum=0,denSum=0,offW=0,offC=0;const schoolRows=[],todo=[];const today=ymd(new Date());
+$("monthPick").value=monthSel;const keys=daysInMonth(monthSel);let school=0,pSum=0,denSum=0,offW=0,offC=0;const schoolRows=[],todo=[],today=ymd(new Date());
 keys.forEach(k=>{const rec=db.days[k];if(isWeekend(k)){offW++;return}if(rec&&rec.closed){offC++;return}if(isSchool(rec)){const r=compute(rec,rosterForDay(k));school++;if(r.rate!=null){pSum+=r.p;denSum+=r.den}schoolRows.push({k,r});return}if(k<=today)todo.push(k)});
 const rate=denSum<=0?null:(pSum/denSum)*100;$("monthRate").textContent=rate==null?"\u2014":Math.round(rate)+" %";$("monthRate").classList.toggle("pending",rate==null);
 $("monthMeta").textContent=monthLabel(monthSel)+" \u00b7 "+school+" jour"+(school>1?"s":"")+" d'école \u00b7 taux = présents / attendus";
@@ -119,7 +118,7 @@ $("monthSchool").querySelectorAll(".child-card").forEach((el,i)=>{el.onclick=()=
 function renderClasse(){
 const box=$("roster");box.innerHTML="";
 if(!db.students.length)box.innerHTML="<p class='hint'>Pas encore d'élève.</p>";
-else db.students.forEach(s=>{const card=document.createElement("div");card.className="child-card";const left=document.createElement("div");left.innerHTML="<div class='nm "+(s.gender==="F"?"girl":"boy")+"'>"+s.first+" "+s.last+"</div><div class='hint'>"+(s.gender==="F"?"Fille":"Gar\u00e7on")+(s.active===false?" \u00b7 retir\u00e9":"")+"</div>";const tog=document.createElement("button");tog.className="btn";tog.textContent=s.active===false?"Réintégrer":"Retirer";tog.onclick=()=>{s.active=s.active===false;save();render()};const right=document.createElement("div");right.appendChild(tog);card.append(left,right);box.appendChild(card)});
+else [...db.students].sort(byName).forEach(s=>{const card=document.createElement("div");card.className="child-card";const left=document.createElement("div");left.innerHTML="<div class='nm "+(s.gender==="F"?"girl":"boy")+"'>"+s.first+" "+s.last+"</div><div class='hint'>"+(s.gender==="F"?"Fille":"Gar\u00e7on")+(s.active===false?" \u00b7 retir\u00e9":"")+"</div>";const tog=document.createElement("button");tog.className="btn";tog.textContent=s.active===false?"Réintégrer":"Retirer";tog.onclick=()=>{s.active=s.active===false;save();render()};const right=document.createElement("div");right.appendChild(tog);card.append(left,right);box.appendChild(card)});
 const y=schoolYearOf(sel);$("yearHint").textContent="Année en cours : "+y.label+" (1er sept. "+y.start.slice(0,4)+" → 31 août "+y.end.slice(0,4)+").";
 const arch=loadArchives();$("archives").innerHTML=arch.length?"<h2>Archives</h2>"+arch.map(a=>"<div class='child-card'><div>"+a.label+" · "+(a.students||[]).length+" enfants</div></div>").join(""):"";
 }
@@ -127,15 +126,14 @@ function inAnalyse(k){if(anMode==="year"){const y=schoolYearOf(anMonth);return k
 function renderAnalyse(){
 $("anMonthPick").value=anMonth;$("btnAnYear").classList.toggle("gold",anMode==="year");
 const keys=Object.keys(db.days).sort().filter(inAnalyse);
-let pSum=0,denSum=0,nb=0;const chart=$("chart");chart.innerHTML="";const flags=[];
-keys.forEach(k=>{const rec=db.days[k];if(!isSchool(rec))return;const r=compute(rec,rosterForDay(k));if(r.rate==null)return;pSum+=r.p;denSum+=r.den;nb++;const lab=k.slice(8)+"/"+k.slice(5,7);const cls=r.rate<80?"low":r.rate<92?"mid":"";const row=document.createElement("div");row.className="bar-row";row.innerHTML="<span class='d'>"+lab+"</span><div class='track'><div class='fill "+cls+"' style='width:"+Math.min(100,r.rate)+"%'></div></div><span>"+Math.round(r.rate)+"%</span>";chart.appendChild(row);if(r.i>0&&r.rate<90)flags.push(k+" : "+r.i+" absent"+(r.i>1?"s":"")+" — taux "+Math.round(r.rate)+" %")});
+let pSum=0,denSum=0,nb=0;const flags=[];
+keys.forEach(k=>{const rec=db.days[k];if(!isSchool(rec))return;const r=compute(rec,rosterForDay(k));if(r.rate==null)return;pSum+=r.p;denSum+=r.den;nb++;if(r.i>0&&r.rate<90)flags.push(k+" : "+r.i+" absent"+(r.i>1?"s":"")+" — taux "+Math.round(r.rate)+" %")});
 const rate=denSum<=0?null:(pSum/denSum)*100;
 $("anRate").textContent=rate==null?"\u2014":Math.round(rate)+" %";$("anRate").classList.toggle("pending",rate==null);
 const periode=anMode==="year"?("année scolaire "+schoolYearOf(anMonth).label):monthLabel(anMonth);
 $("anHead").textContent=nb?(periode+" · "+nb+" jour"+(nb>1?"s":"")+" d'école · présents / attendus"):(periode+" · aucun jour d'école validé.");
-if(!chart.children.length)chart.innerHTML="<p class='hint'>Aucun jour d'école validé sur cette période.</p>";
 const by={};keys.forEach(k=>{const rec=db.days[k];if(!isSchool(rec))return;rosterForDay(k).forEach(s=>{if(!by[s.id])by[s.id]={s,P:0,J:0,I:0};const m=rec.marks[s.id];if(m==="P"||m==="J"||m==="I")by[s.id][m]++})});
-const box=$("byChild");box.innerHTML="";const rows=Object.values(by).sort((a,b)=>(a.s.last+a.s.first).localeCompare(b.s.last+b.s.first,"fr"));
+const box=$("byChild");box.innerHTML="";const rows=Object.values(by).sort((a,b)=>byName(a.s,b.s));
 if(!rows.length)box.innerHTML="<p class='hint'>Pas encore de stats.</p>";
 rows.forEach(({s,P,J,I})=>{const den=P+I,rt=den<=0?"n/c":Math.round(P/den*100)+" %";const div=document.createElement("div");div.className="child-card";div.innerHTML="<div><div class='nm "+(s.gender==="F"?"girl":"boy")+"'>"+s.first+" "+s.last+"</div><div class='hint'>Présent "+P+" · Dispensé "+J+" · Absent "+I+"</div></div><div>"+rt+"</div>";box.appendChild(div)});
 $("flags").innerHTML=flags.length?"<table><tbody>"+flags.map(f=>"<tr><td>"+f+"</td></tr>").join("")+"</tbody></table>":"<p class='hint'>Rien de particulier.</p>";
@@ -149,13 +147,13 @@ $("btnThisMonth").onclick=()=>{monthSel=ymd(new Date()).slice(0,7);renderMois()}
 $("anMonthPick").onchange=()=>{if($("anMonthPick").value){anMonth=$("anMonthPick").value;anMode="month";renderAnalyse()}};
 $("btnAnMonth").onclick=()=>{anMonth=ymd(new Date()).slice(0,7);anMode="month";renderAnalyse()};
 $("btnAnYear").onclick=()=>{anMode="year";renderAnalyse()};
-$("btnNewYear").onclick=()=>{const y=schoolYearOf(ymd(new Date()));if(!confirm("Archiver "+y.label+" et vider l'appli pour une nouvelle classe ?\nExportez d'abord le CSV si besoin."))return;const arch=loadArchives();arch.push({label:y.label,saved:ymd(new Date()),students:db.students,days:db.days});saveArchives(arch);db={students:[],days:{}};save();alert("Année "+y.label+" archivée. Ajoutez la nouvelle classe.");screen="classe";render()};
 $("sexF").onclick=()=>{sex="F";$("sexF").classList.add("on");$("sexM").classList.remove("on")};
 $("sexM").onclick=()=>{sex="M";$("sexM").classList.add("on");$("sexF").classList.remove("on")};
 $("btnAdd").onclick=()=>{const first=$("first").value.trim(),last=$("last").value.trim();if(!first||!last){alert("Prénom et nom requis.");return}db.students.push({id:uid(),first,last,gender:sex,active:true});$("first").value="";$("last").value="";save();render()};
 $("btnValid").onclick=()=>{if(isWeekend(sel))return;const kids=activeStudents();if(!kids.length){alert("Ajoutez d'abord les enfants.");return}const rec=dayRec(sel);if(rec.closed)return;const r=compute(rec,kids);if(r.missing){alert("Notez tous les enfants ("+r.missing+" manquant"+(r.missing>1?"s":"")+").");return}rec.validated=true;rec.closed=false;rec.snapshot=kids.map(s=>s.id);save();render()};
 $("btnCorrect").onclick=()=>{const rec=dayRec(sel);if(rec.closed){if(!confirm("Remettre ce jour comme jour d'école à saisir ?"))return;rec.closed=false;save();render();return}if(!rec.validated)return;if(!confirm("Rouvrir la journée ?"))return;rec.validated=false;save();render()};
 $("btnOff").onclick=()=>{if(isWeekend(sel))return;if(!confirm("Marquer "+longDate(sel)+" comme jour sans école ?"))return;const rec=dayRec(sel);rec.closed=true;rec.validated=false;save();render()};
+$("btnNewYear").onclick=()=>{const y=schoolYearOf(ymd(new Date()));if(!confirm("Archiver "+y.label+" et vider l'appli pour une nouvelle classe ?\nExportez d'abord le CSV si besoin."))return;const arch=loadArchives();arch.push({label:y.label,saved:ymd(new Date()),students:db.students,days:db.days});saveArchives(arch);db={students:[],days:{}};save();alert("Année "+y.label+" archivée.");screen="classe";render()};
 $("btnXls").onclick=()=>{const lines=["\uFEFF","Journal jours d'école","date;prenom;nom;sexe;etat"];Object.keys(db.days).sort().forEach(k=>{const rec=db.days[k];if(!isSchool(rec))return;rosterForDay(k).forEach(s=>{const m=rec.marks[s.id]||"";const etat=m==="P"?"present":m==="J"?"dispense":m==="I"?"absent":"";if(etat)lines.push([k,s.first,s.last,s.gender==="F"?"F":"G",etat].join(";"))})});lines.push("","Jours","date;type;presents;dispenses;absents;effectif;denominateur;taux_pct");Object.keys(db.days).sort().forEach(k=>{const rec=db.days[k];if(isWeekend(k)){lines.push([k,"weekend","","","","","",""].join(";"));return}if(rec&&rec.closed){lines.push([k,"pas_ecole","","","","","",""].join(";"));return}if(!isSchool(rec))return;const r=compute(rec,rosterForDay(k));lines.push([k,"jour_ecole",r.p,r.j,r.i,r.n,r.den,r.rate==null?"":Math.round(r.rate*10)/10].join(";"))});const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="presences-tps-"+sel+".csv";a.click()};
 render();
 </script></body></html>
