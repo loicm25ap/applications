@@ -3,7 +3,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="theme-color" content="#0e0f10"/>
 <title>Présences Maternelle</title>
 <style>
 :root{--bg:#0e0f10;--panel:#17191b;--panel-2:#1e2124;--line:#2a2e32;--text:#e8e6e1;--muted:#9a958c;--gold:#c4a574;--gold-dim:#8a7349;--go:#2f6b4a;--go-bg:#1a2e22;--inj:#8a4545;--inj-bg:#2c1b1b;--girl:#e7a8bc;--boy:#8eb6d9;--warn:#b8893a}
@@ -68,6 +67,13 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 <h2 style="margin-top:36px">Année scolaire</h2><p class="hint" id="yearHint"></p>
 <button class="btn warn" id="btnNewYear" style="min-height:42px;font-size:13px;padding:8px 14px">Nouvelle année scolaire</button>
 <p class="hint">1er septembre → 31 août. Exporter le CSV, par ce bouton pour archiver et repartir à vide.</p>
+<h2>Sauvegarde</h2>
+<p class="hint">Le CSV Excel sert à lire les taux. Pour récupérer l'appli après un problème, utilisez ce fichier JSON.</p>
+<input type="file" id="bakFile" accept="application/json,.json" style="display:none"/>
+<div class="row-btns" style="margin-bottom:16px">
+<button class="btn sm gold" id="btnBak">Sauvegarder</button>
+<button class="btn sm" id="btnImp">Importer une sauvegarde</button>
+</div>
 <div id="archives"></div>
 </section></main>
 <script>
@@ -90,6 +96,8 @@ function resetForm(){editId=null;$("first").value="";$("last").value="";setSex("
 function startEdit(id){const s=db.students.find(x=>x.id===id);if(!s)return;editId=id;$("first").value=s.first;$("last").value=s.last;setSex(s.gender==="M"?"M":"F");$("btnAdd").textContent="Enregistrer";$("btnCancel").style.display="block";window.scrollTo({top:0,behavior:"smooth"})}
 function saveStudent(){const first=$("first").value.trim(),last=$("last").value.trim();if(!first||!last){alert("Prénom et nom requis.");return}if(editId){const s=db.students.find(x=>x.id===editId);if(!s)return;s.first=first;s.last=last;s.gender=sex}else db.students.push({id:uid(),first,last,gender:sex,active:true});resetForm();save();render()}
 function deleteForever(id){const s=db.students.find(x=>x.id===id);if(!s)return;if(!confirm("Supprimer définitivement "+s.first+" "+s.last+" ?\nToutes ses présences disparaîtront des tableaux."))return;db.students=db.students.filter(x=>x.id!==id);Object.keys(db.days).forEach(k=>{const rec=db.days[k];if(rec.marks)delete rec.marks[id];if(rec.snapshot)rec.snapshot=rec.snapshot.filter(x=>x!==id)});if(editId===id)resetForm();save();render()}
+function exportBackup(){const pack={app:"maternelle",version:1,saved:ymd(new Date()),data:db,archives:loadArchives()};const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(pack)],{type:"application/json"}));a.download="sauvegarde-maternelle-"+ymd(new Date())+".json";a.click()}
+function importBackup(file){const r=new FileReader();r.onload=()=>{try{const pack=JSON.parse(r.result);if(pack.app&&pack.app!=="maternelle"){alert("Ce fichier n'est pas une sauvegarde Maternelle.");return}const data=pack.data||pack;if(!data||!Array.isArray(data.students)||typeof data.days!=="object"){alert("Fichier illisible.");return}if(!confirm("Remplacer toutes les données actuelles par cette sauvegarde ?"))return;db={students:data.students||[],days:data.days||{}};save();if(pack.archives)saveArchives(pack.archives);alert("Sauvegarde restaurée.");render()}catch(e){alert("Fichier illisible.")}};r.readAsText(file)}
 function miniBtn(label,cls,fn){const b=document.createElement("button");b.className="btn sm "+cls;b.textContent=label;b.onclick=fn;return b}
 let db=load(),sex="F",screen="jour",sel=ymd(new Date()),monthSel=sel.slice(0,7),anMonth=monthSel,anMode="month";
 function activeStudents(){return db.students.filter(s=>s.active!==false)}
@@ -156,6 +164,9 @@ $("btnThisMonth").onclick=()=>{monthSel=ymd(new Date()).slice(0,7);renderMois()}
 $("anMonthPick").onchange=()=>{if($("anMonthPick").value){anMonth=$("anMonthPick").value;anMode="month";renderAnalyse()}};
 $("btnAnMonth").onclick=()=>{anMonth=ymd(new Date()).slice(0,7);anMode="month";renderAnalyse()};
 $("btnAnYear").onclick=()=>{anMode="year";renderAnalyse()};
+$("btnBak").onclick=exportBackup;
+$("btnImp").onclick=()=>$("bakFile").click();
+$("bakFile").onchange=()=>{const f=$("bakFile").files[0];$("bakFile").value="";if(f)importBackup(f)};
 $("btnAdd").onclick=saveStudent;$("btnCancel").onclick=resetForm;$("sexF").onclick=()=>setSex("F");$("sexM").onclick=()=>setSex("M");
 $("btnValid").onclick=()=>{if(isWeekend(sel))return;const kids=activeStudents();if(!kids.length){alert("Ajoutez d'abord les enfants.");return}const rec=dayRec(sel);if(rec.closed)return;const rm=computeHalf(rec,kids,"M"),rs=computeHalf(rec,kids,"S");if(rm.missing||rs.missing){alert("Notez matin et après-midi pour chaque enfant.");return}rec.validated=true;rec.closed=false;rec.snapshot=kids.map(s=>s.id);save();render()};
 $("btnCorrect").onclick=()=>{const rec=dayRec(sel);if(rec.closed){if(!confirm("Remettre ce jour comme jour d'école à saisir ?"))return;rec.closed=false;save();render();return}if(!rec.validated)return;if(!confirm("Rouvrir la journée ?"))return;rec.validated=false;save();render()};
