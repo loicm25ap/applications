@@ -2,7 +2,6 @@
 <html lang="fr"><head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>Présences Maternelle</title>
 <style>
 :root{--bg:#0e0f10;--panel:#17191b;--panel-2:#1e2124;--line:#2a2e32;--text:#e8e6e1;--muted:#9a958c;--gold:#c4a574;--gold-dim:#8a7349;--go:#2f6b4a;--go-bg:#1a2e22;--inj:#8a4545;--inj-bg:#2c1b1b;--girl:#e7a8bc;--boy:#8eb6d9;--warn:#b8893a}
@@ -34,6 +33,7 @@ main{max-width:560px;margin:0 auto;padding:12px 12px 40px}.screen{display:none}.
 h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
 .row-btns{display:flex;flex-wrap:wrap;gap:6px;width:100%;margin-top:8px}
 .btn.sm{min-height:42px;font-size:13px;padding:8px 14px;flex:0 0 auto}
+.btn.on-valid{background:var(--go-bg);border-color:var(--go);color:#cfe8d6}
 .btn.danger{border-color:var(--inj);color:#e8c4c4}
 #btnCancel{display:none;margin-top:8px}
 .linkish{color:var(--gold);border:none;background:none;min-height:auto;padding:0;font-size:13px}
@@ -82,6 +82,13 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function ymd(d){const x=d instanceof Date?d:new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")}
 function parseDay(k){const [y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d)}
 function isWeekend(k){const n=parseDay(k).getDay();return n===0||n===6}
+function addDays(k,n){const d=parseDay(k);d.setDate(d.getDate()+n);return ymd(d)}
+function easterYmd(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return ymd(new Date(y,mo-1,day))}
+function holidayName(k){const [y,mo,da]=k.split("-").map(Number);const md=String(mo).padStart(2,"0")+"-"+String(da).padStart(2,"0");const fix={"01-01":"Jour de l'an","05-01":"Fête du Travail","05-08":"Victoire 1945","07-14":"Fête nationale","08-15":"Assomption","11-01":"Toussaint","11-11":"Armistice","12-25":"Noël"};if(fix[md])return fix[md];const e=easterYmd(y);if(k===addDays(e,1))return "Lundi de Pâques";if(k===addDays(e,39))return "Ascension";if(k===addDays(e,50))return "Lundi de Pentecôte";return null}
+const VAC=[["2026-07-04","2026-09-01","Vacances d'été"],["2026-10-17","2026-11-02","Vacances de Toussaint"],["2026-12-19","2027-01-04","Vacances de Noël"],["2027-02-13","2027-03-01","Vacances d'hiver"],["2027-04-10","2027-04-26","Vacances de printemps"],["2027-05-05","2027-05-10","Pont de l'Ascension"],["2027-07-03","2027-09-02","Vacances d'été"],["2027-10-23","2027-11-08","Vacances de Toussaint"],["2027-12-18","2028-01-03","Vacances de Noël"],["2028-02-19","2028-03-06","Vacances d'hiver"],["2028-04-22","2028-05-09","Vacances de printemps"],["2028-07-04","2028-09-04","Vacances d'été"]];
+function vacationName(k){for(const [a,b,n] of VAC){if(k>=a&&k<b)return n}return null}
+function offReason(k){const n=parseDay(k).getDay();if(n===0)return "Dimanche";if(n===6)return "Samedi";if(n===3)return "Mercredi — pas d'école";const h=holidayName(k);if(h)return "Férié — "+h;const v=vacationName(k);if(v)return v+" (zone A Besançon)";return null}
+function isNonSchool(k){return !!offReason(k)}
 function longDate(k){return parseDay(k).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
 function monthLabel(ym){const [y,m]=ym.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("fr-FR",{month:"long",year:"numeric"})}
 function schoolYearOf(ym){const [y,m]=(ym||ymd(new Date())).split("-").map(Number);const startY=m>=9?y:y-1;return{start:startY+"-09-01",end:(startY+1)+"-08-31",label:startY+"-"+(startY+1)}}
@@ -114,10 +121,10 @@ function showRates(idR,idM,r){$(idR).textContent=r.missing||!r.n?"\u2014":rateTx
 function renderJour(){
 $("dayPick").value=sel;$("dateBig").textContent=longDate(sel);
 $("dateSub").textContent=sel===ymd(new Date())?"Jour affiché : aujourd'hui":"Saisie d'un autre jour";
-const rec=dayRec(sel),kids=activeStudents(),week=isWeekend(sel),ui=$("schoolBlock");
-if(week){$("rateM").textContent="\u2014";$("rateS").textContent="\u2014";$("rateM").classList.add("pending");$("rateS").classList.add("pending");$("metaM").textContent="";$("metaS").textContent="";$("lockBadge").textContent="Week-end — non travaillé";$("lockBadge").className="badge";ui.style.display="none";return}
+const rec=dayRec(sel),kids=activeStudents(),auto=offReason(sel),ui=$("schoolBlock");
+if(auto){$("rateM").textContent="\u2014";$("rateS").textContent="\u2014";$("rateM").classList.add("pending");$("rateS").classList.add("pending");$("metaM").textContent="";$("metaS").textContent="";$("lockBadge").textContent=auto;$("lockBadge").className="badge";ui.style.display="none";return}
 if(rec.closed){$("rateM").textContent="\u2014";$("rateS").textContent="\u2014";$("rateM").classList.add("pending");$("rateS").classList.add("pending");$("metaM").textContent="";$("metaS").textContent="";$("lockBadge").textContent="Pas d'école";$("lockBadge").className="badge";ui.style.display="block";$("list").innerHTML="";$("btnValid").style.display="none";$("btnCorrect").textContent="Annuler \u00ab pas d'école \u00bb";$("btnOff").style.display="none";return}
-$("btnValid").style.display="";$("btnCorrect").textContent="Corriger";$("btnOff").style.display="";ui.style.display="block";
+$("btnValid").style.display="";$("btnValid").classList.toggle("on-valid",!!rec.validated);$("btnValid").textContent=rec.validated?"Jour d'école validé":"Valider jour d'école";$("btnCorrect").textContent="Corriger";$("btnOff").style.display="";ui.style.display="block";
 const rm=computeHalf(rec,kids,"M"),rs=computeHalf(rec,kids,"S");showRates("rateM","metaM",rm);showRates("rateS","metaS",rs);
 const miss=rm.missing+rs.missing;$("lockBadge").textContent=rec.validated?"Jour d'école validé":(miss?miss+" case"+(miss>1?"s":"")+" à noter":"Prêt à valider");$("lockBadge").className="badge"+(rec.validated?" ok":"");
 const list=$("list");list.className=rec.validated?"locked":"";list.innerHTML="";
@@ -126,12 +133,12 @@ kids.sort(byName).forEach(s=>{const mk=markOf(rec,s.id);const card=document.crea
 function setMark(id,half,val){const rec=dayRec(sel);if(rec.validated||rec.closed)return;if(!rec.marks[id]||typeof rec.marks[id]!=="object")rec.marks[id]={M:"",S:""};rec.marks[id][half]=rec.marks[id][half]===val?"":val;save();renderJour()}
 function renderMois(){
 $("monthPick").value=monthSel;const keys=daysInMonth(monthSel);let school=0,pM=0,nM=0,pS=0,nS=0,offW=0,offC=0;const schoolRows=[],todo=[],today=ymd(new Date());
-keys.forEach(k=>{const rec=db.days[k];if(isWeekend(k)){offW++;return}if(rec&&rec.closed){offC++;return}if(isSchool(rec)){const rm=computeHalf(rec,rosterForDay(k),"M"),rs=computeHalf(rec,rosterForDay(k),"S");school++;if(rm.rate!=null){pM+=rm.p;nM+=rm.n}if(rs.rate!=null){pS+=rs.p;nS+=rs.n}schoolRows.push({k,rm,rs});return}if(k<=today)todo.push(k)});
+keys.forEach(k=>{const rec=db.days[k];if(isNonSchool(k)){offW++;return}if(rec&&rec.closed){offC++;return}if(isSchool(rec)){const rm=computeHalf(rec,rosterForDay(k),"M"),rs=computeHalf(rec,rosterForDay(k),"S");school++;if(rm.rate!=null){pM+=rm.p;nM+=rm.n}if(rs.rate!=null){pS+=rs.p;nS+=rs.n}schoolRows.push({k,rm,rs});return}if(k<=today)todo.push(k)});
 const rM=nM?Math.round(pM/nM*100)+" %":"\u2014",rS=nS?Math.round(pS/nS*100)+" %":"\u2014";
 $("monthRateM").textContent=rM;$("monthRateS").textContent=rS;$("monthRateM").classList.toggle("pending",!nM);$("monthRateS").classList.toggle("pending",!nS);
 $("monthMeta").textContent=monthLabel(monthSel)+" \u00b7 "+school+" jour"+(school>1?"s":"")+" d'école \u00b7 présents / effectif";
 $("monthSchool").innerHTML=schoolRows.length?schoolRows.map(x=>"<div class='child-card'><div>"+x.k+"</div><div>"+rateTxt(x.rm)+" / "+rateTxt(x.rs)+"</div></div>").join(""):"<p class='hint'>Aucun jour d'école validé ce mois.</p>";
-$("monthOff").innerHTML="<p class='hint'>"+offW+" week-end"+(offW>1?"s":"")+(offC?" \u00b7 "+offC+" fermeture"+(offC>1?"s":""):"")+".</p>";
+$("monthOff").innerHTML="<p class='hint'>"+offW+" jour"+(offW>1?"s":"")+" non travaillé"+(offW>1?"s":"")+" (week-end, mercredi, férié, vacances zone A)"+(offC?" \u00b7 "+offC+" fermeture"+(offC>1?"s":""):"")+".</p>";
 $("monthTodo").innerHTML=todo.length?todo.map(k=>"<div class='child-card'><div>"+k+"</div><button class='linkish' data-k='"+k+"'>Saisir</button></div>").join(""):"<p class='hint'>Rien à saisir.</p>";
 $("monthTodo").querySelectorAll("button[data-k]").forEach(b=>b.onclick=()=>goDay(b.dataset.k));
 $("monthSchool").querySelectorAll(".child-card").forEach((el,i)=>{el.onclick=()=>goDay(schoolRows[i].k)});
@@ -168,9 +175,9 @@ $("btnBak").onclick=exportBackup;
 $("btnImp").onclick=()=>$("bakFile").click();
 $("bakFile").onchange=()=>{const f=$("bakFile").files[0];$("bakFile").value="";if(f)importBackup(f)};
 $("btnAdd").onclick=saveStudent;$("btnCancel").onclick=resetForm;$("sexF").onclick=()=>setSex("F");$("sexM").onclick=()=>setSex("M");
-$("btnValid").onclick=()=>{if(isWeekend(sel))return;const kids=activeStudents();if(!kids.length){alert("Ajoutez d'abord les enfants.");return}const rec=dayRec(sel);if(rec.closed)return;const rm=computeHalf(rec,kids,"M"),rs=computeHalf(rec,kids,"S");if(rm.missing||rs.missing){alert("Notez matin et après-midi pour chaque enfant.");return}rec.validated=true;rec.closed=false;rec.snapshot=kids.map(s=>s.id);save();render()};
+$("btnValid").onclick=()=>{if(isNonSchool(sel))return;const kids=activeStudents();if(!kids.length){alert("Ajoutez d'abord les enfants.");return}const rec=dayRec(sel);if(rec.closed)return;const rm=computeHalf(rec,kids,"M"),rs=computeHalf(rec,kids,"S");if(rm.missing||rs.missing){alert("Notez matin et après-midi pour chaque enfant.");return}rec.validated=true;rec.closed=false;rec.snapshot=kids.map(s=>s.id);save();render()};
 $("btnCorrect").onclick=()=>{const rec=dayRec(sel);if(rec.closed){if(!confirm("Remettre ce jour comme jour d'école à saisir ?"))return;rec.closed=false;save();render();return}if(!rec.validated)return;if(!confirm("Rouvrir la journée ?"))return;rec.validated=false;save();render()};
-$("btnOff").onclick=()=>{if(isWeekend(sel))return;if(!confirm("Marquer "+longDate(sel)+" comme jour sans école ?"))return;const rec=dayRec(sel);rec.closed=true;rec.validated=false;save();render()};
+$("btnOff").onclick=()=>{if(isNonSchool(sel))return;if(!confirm("Marquer "+longDate(sel)+" comme jour sans école ?"))return;const rec=dayRec(sel);rec.closed=true;rec.validated=false;save();render()};
 $("btnNewYear").onclick=()=>{const y=schoolYearOf(ymd(new Date()));if(!confirm("Archiver "+y.label+" et vider l'appli pour une nouvelle classe ?\nExportez d'abord le CSV si besoin."))return;const arch=loadArchives();arch.push({label:y.label,saved:ymd(new Date()),students:db.students,days:db.days});saveArchives(arch);db={students:[],days:{}};save();alert("Année "+y.label+" archivée.");screen="classe";render()};
 $("btnXls").onclick=()=>{const lines=["\uFEFF","Journal","date;demi;prenom;nom;sexe;etat"];Object.keys(db.days).sort().forEach(k=>{const rec=db.days[k];if(!isSchool(rec))return;rosterForDay(k).forEach(s=>{const m=markOf(rec,s.id);[["M","matin"],["S","apres_midi"]].forEach(([h,lab])=>{const etat=m[h]==="P"?"present":m[h]==="A"?"absent":"";if(etat)lines.push([k,lab,s.first,s.last,s.gender==="F"?"F":"G",etat].join(";"))})})});lines.push("","Taux","date;presents_matin;absents_matin;effectif_matin;taux_matin;presents_am;absents_am;effectif_am;taux_am");Object.keys(db.days).sort().forEach(k=>{const rec=db.days[k];if(!isSchool(rec))return;const rm=computeHalf(rec,rosterForDay(k),"M"),rs=computeHalf(rec,rosterForDay(k),"S");lines.push([k,rm.p,rm.a,rm.n,rm.rate==null?"":Math.round(rm.rate*10)/10,rs.p,rs.a,rs.n,rs.rate==null?"":Math.round(rs.rate*10)/10].join(";"))});const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="presences-maternelle-"+sel+".csv";a.click()};
 render();
