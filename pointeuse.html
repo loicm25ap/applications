@@ -85,11 +85,16 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 </div>
 <div id="adjBox" class="form" style="display:none">
 <div class="lab" id="adjTitle">Ajuster les temps</div>
-<p class="hint">Minutes en plus ou en moins. Ex. 60 ou -15. Pas de commentaire.</p>
-<input id="adjSetup" inputmode="decimal" placeholder="Mise en route (min) : 25 ou -10"/>
-<input id="adjProd" inputmode="decimal" placeholder="Production (min) : 60 ou -45"/>
-<button class="btn gold full" id="btnAdjOk">Appliquer</button>
-<button class="btn full" id="btnAdjCancel" style="margin-top:8px">Fermer</button>
+<p class="hint">Tape les minutes, puis Ajouter ou Retirer. Un champ vide = 0.</p>
+<div class="lab">Mise en route (min)</div>
+<input id="adjSetup" inputmode="numeric" pattern="[0-9]*" placeholder="ex. 25"/>
+<div class="lab">Production (min)</div>
+<input id="adjProd" inputmode="numeric" pattern="[0-9]*" placeholder="ex. 60"/>
+<div class="actions">
+<button class="btn go" id="btnAdjPlus">+ Ajouter</button>
+<button class="btn stop" id="btnAdjMinus">− Retirer</button>
+</div>
+<button class="btn full" id="btnAdjCancel">Fermer</button>
 </div>
 </section>
 <section class="screen" id="screen-journal">
@@ -211,19 +216,21 @@ function openAdj(ofNum){
   $("adjBox").style.display="block";
   screen="lot";renderNav();
   document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id==="screen-lot"));
+  setTimeout(()=>$("adjBox").scrollIntoView({block:"center",behavior:"smooth"}),50);
 }
-function applyAdj(){
+function applyAdj(sign){
   if(!adjOf)return;
   const aS=parseMin($("adjSetup").value),aP=parseMin($("adjProd").value);
-  if(aS==null||aP==null){alert("Minutes invalides.");return}
-  if(!aS&&!aP){alert("Indiquez au moins un ajustement.");return}
+  if(aS==null||aP==null||aS<0||aP<0){alert("Minutes invalides.");return}
+  if(!aS&&!aP){alert("Indiquez au moins un temps.");return}
+  const s=sign*aS,p=sign*aP;
   if(db.current&&db.current.of===adjOf){
-    db.current.setupAdjMs=(db.current.setupAdjMs||0)+aS;
-    db.current.prodAdjMs=(db.current.prodAdjMs||0)+aP;
+    db.current.setupAdjMs=(db.current.setupAdjMs||0)+s;
+    db.current.prodAdjMs=(db.current.prodAdjMs||0)+p;
   }else{
     const l=db.lots.find(x=>x.of===adjOf);if(!l)return;
-    l.setupAdjMs=(l.setupAdjMs||0)+aS;
-    l.prodAdjMs=(l.prodAdjMs||0)+aP;
+    l.setupAdjMs=(l.setupAdjMs||0)+s;
+    l.prodAdjMs=(l.prodAdjMs||0)+p;
   }
   $("adjSetup").value="";$("adjProd").value="";
   save();render();
@@ -325,8 +332,10 @@ $("btnProd").onclick=toProd;
 $("btnPause").onclick=togglePause;
 $("btnEnd").onclick=endLot;
 $("btnAdjNow").onclick=()=>openAdj(db.current&&db.current.of);
-$("btnAdjOk").onclick=applyAdj;
+$("btnAdjPlus").onclick=()=>applyAdj(1);
+$("btnAdjMinus").onclick=()=>applyAdj(-1);
 $("btnAdjCancel").onclick=()=>{adjOf=null;$("adjBox").style.display="none"};
+["adjSetup","adjProd"].forEach(id=>$(id).addEventListener("input",()=>$(id).value=onlyDigits($(id).value)));
 $("btnAddRef").onclick=()=>{const v=onlyDigits($("newRef").value);if(!v){alert("La réf doit être en chiffres.");return}if(db.refs.includes(v)){alert("Déjà dans le catalogue.");return}db.refs.push(v);$("newRef").value="";save();render()};
 $("newRef").addEventListener("keydown",e=>{if(e.key==="Enter")$("btnAddRef").click()});
 ["ofIn","refIn","newRef"].forEach(id=>{
