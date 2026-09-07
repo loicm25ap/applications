@@ -64,10 +64,10 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 </div>
 <div id="startBox" class="form">
 <div class="lab">Numéro d'OF</div>
-<input id="ofIn" placeholder="OF unique du lancement" autocomplete="off"/>
+<input id="ofIn" inputmode="numeric" pattern="[0-9]*" placeholder="Chiffres uniquement" autocomplete="off"/>
 <div class="lab">Référence pièce</div>
 <div class="chips" id="refChips"></div>
-<input id="refIn" placeholder="Ou taper une nouvelle réf" autocomplete="off"/>
+<input id="refIn" inputmode="numeric" pattern="[0-9]*" placeholder="Réf en chiffres" autocomplete="off"/>
 <div class="lab">Quantité du lot</div>
 <input id="qtyIn" type="number" min="1" step="1" inputmode="numeric" placeholder="Nombre de pièces"/>
 <button class="btn gold full" id="btnStart">Démarrer mise en route</button>
@@ -103,7 +103,7 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 </section>
 <section class="screen" id="screen-refs">
 <div class="form">
-<input id="newRef" placeholder="Nouvelle référence" autocomplete="off"/>
+<input id="newRef" inputmode="numeric" pattern="[0-9]*" placeholder="Nouvelle réf (chiffres)" autocomplete="off"/>
 <button class="btn gold full" id="btnAddRef">Ajouter la réf</button>
 </div>
 <div id="refList"></div>
@@ -126,6 +126,8 @@ function hm(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")
 function sec(ms){return Math.round((ms||0)/1000)}
 function esc(s){return String(s||"").replace(/[;&]/g,",")}
 function parseMin(v){v=String(v||"").trim().replace(",",".");if(!v)return 0;const n=Number(v);return isFinite(n)?Math.round(n*60000):null}
+function onlyDigits(v){return String(v||"").replace(/\D/g,"")}
+function isDigits(v){return /^[0-9]+$/.test(String(v||""))}
 function nets(o,liveSetup,liveProd){
   const s=Math.max(0,(liveSetup!=null?liveSetup:o.setupMs||0)+(o.setupAdjMs||0));
   const p=Math.max(0,(liveProd!=null?liveProd:o.prodMs||0)+(o.prodAdjMs||0));
@@ -160,11 +162,13 @@ function startPhase(kind){
 function ofExists(num){return db.lots.some(l=>l.of===num)||(db.current&&db.current.of===num)}
 function startLot(phase){
   if(db.current){alert("Terminez d'abord le lot en cours.");return}
-  const of=($("ofIn").value||"").trim();
-  const ref=($("refIn").value||selRef||"").trim();
+  const of=onlyDigits($("ofIn").value);
+  const ref=onlyDigits($("refIn").value||selRef||"");
   const qty=parseInt($("qtyIn").value,10);
-  if(!of){alert("Indiquez le numéro d'OF.");return}
-  if(!ref){alert("Indiquez la référence.");return}
+  if(!of){alert("Indiquez le numéro d'OF (chiffres).");return}
+  if(!isDigits(of)){alert("L'OF ne doit contenir que des chiffres.");return}
+  if(!ref){alert("Indiquez la référence (chiffres).");return}
+  if(!isDigits(ref)){alert("La réf ne doit contenir que des chiffres.");return}
   if(!qty||qty<1){alert("Indiquez la quantité du lot.");return}
   if(ofExists(of)){alert("Cet OF existe déjà. Chaque lancement a un numéro unique.");return}
   if(!db.refs.includes(ref))db.refs.push(ref);
@@ -200,6 +204,8 @@ function pieceTimes(l){
 function openAdj(ofNum){
   adjOf=ofNum|| (db.current?db.current.of:null);
   if(!adjOf)return;
+  const o=db.current&&db.current.of===adjOf?db.current:db.lots.find(x=>x.of===adjOf);
+  if(!o)return;
   $("adjTitle").textContent="Ajuster \u00b7 OF "+adjOf;
   $("adjSetup").value="";$("adjProd").value="";
   $("adjBox").style.display="block";
@@ -321,9 +327,14 @@ $("btnEnd").onclick=endLot;
 $("btnAdjNow").onclick=()=>openAdj(db.current&&db.current.of);
 $("btnAdjOk").onclick=applyAdj;
 $("btnAdjCancel").onclick=()=>{adjOf=null;$("adjBox").style.display="none"};
-$("btnAddRef").onclick=()=>{const v=$("newRef").value.trim();if(!v)return;if(db.refs.includes(v)){alert("D\u00e9j\u00e0 dans le catalogue.");return}db.refs.push(v);$("newRef").value="";save();render()};
+$("btnAddRef").onclick=()=>{const v=onlyDigits($("newRef").value);if(!v){alert("La réf doit être en chiffres.");return}if(db.refs.includes(v)){alert("Déjà dans le catalogue.");return}db.refs.push(v);$("newRef").value="";save();render()};
 $("newRef").addEventListener("keydown",e=>{if(e.key==="Enter")$("btnAddRef").click()});
-$("refIn").addEventListener("input",()=>{selRef=$("refIn").value.trim();renderChips()});
+["ofIn","refIn","newRef"].forEach(id=>{
+  $(id).addEventListener("input",()=>{
+    $(id).value=onlyDigits($(id).value);
+    if(id==="refIn"){selRef=$("refIn").value;renderChips()}
+  });
+});
 $("btnCsv").onclick=()=>{
   const lines=["\uFEFF","of;date;ref;qte;route_badge_sec;prod_badge_sec;route_ajust_sec;prod_ajust_sec;route_net_sec;prod_net_sec;pause_sec;total_travail_sec;temps_piece_sec;temps_charge_sec;debut;fin"];
   [...db.lots].sort((a,b)=>a.started-b.started).forEach(l=>{
