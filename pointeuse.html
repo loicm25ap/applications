@@ -115,7 +115,7 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 <p class="hint">Les réfs restent d’une semaine sur l’autre. Supprimer une réf n’efface pas les lots déjà pointés.</p>
 </section>
 <section class="screen" id="screen-analyse">
-<p class="hint" style="margin-top:0">Temps pièce = production nette ÷ qté. Temps chargé = (mise en route nette + production nette) ÷ qté. Pauses hors calcul.</p>
+<p class="hint" style="margin-top:0">Temps pièce = production nette ÷ qté. Temps chargé = (mise en route nette + production nette) ÷ qté. Pauses hors calcul. Heure numérique = format fiche de prod (ex. 0,250 h = 15 min).</p>
 <div id="analyse"></div>
 </section>
 </main>
@@ -127,6 +127,8 @@ function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function ymd(d){const x=d instanceof Date?d:new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")}
 function fmt(ms){ms=Math.max(0,ms||0);const s=Math.floor(ms/1000);return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
 function fmtSigned(ms){const n=ms||0,sign=n<0?"-":"+";return sign+fmt(Math.abs(n))}
+function hNum(ms){return ((ms||0)/3600000).toLocaleString("fr-FR",{minimumFractionDigits:3,maximumFractionDigits:3})}
+function msLabel(ms){if(ms==null)return"n/c";return fmt(ms)+" \u00b7 "+hNum(ms)+" h"}
 function hm(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
 function sec(ms){return Math.round((ms||0)/1000)}
 function esc(s){return String(s||"").replace(/[;&]/g,",")}
@@ -186,7 +188,6 @@ function startLot(phase){
 function toProd(){
   const c=db.current;if(!c)return;
   if(c.phase==="prod")return;
-  if(c.phase==="pause"){alert("Reprendre d'abord (bouton Pause).");return}
   closePhase();startPhase("prod");save();render();
 }
 function togglePause(){
@@ -258,9 +259,11 @@ function renderNow(){
   ph.className="phase "+c.phase;
   ph.textContent=c.phase==="setup"?"Mise en route":c.phase==="prod"?"Production":"Pause \u2014 le temps pi\u00e8ce est fig\u00e9";
   $("kSetup").textContent=fmt(L.nSetup);$("kProd").textContent=fmt(L.nProd);$("kPause").textContent=fmt(L.pause);$("kWork").textContent=fmt(L.nWork);
+  $("btnPause").style.display=c.phase==="pause"?"none":"";
+  $("btnPause").textContent="Pause / d\u00e9rangement";
   $("btnProd").style.display=c.phase==="prod"?"none":"";
-  $("btnPause").textContent=c.phase==="pause"?"Reprendre":"Pause / d\u00e9rangement";
-  $("runHint").textContent=c.phase==="setup"?"R\u00e9glez, puis passez en production.":c.phase==="prod"?"Pause pour un d\u00e9rangement. Ajuster pour le temps d'un coll\u00e8gue.":"Reprendre pour continuer le m\u00eame OF.";
+  $("btnProd").textContent=c.phase==="pause"?"Repartir en production":"Passer en production";
+  $("runHint").textContent=c.phase==="setup"?"R\u00e9glez, puis passez en production.":c.phase==="prod"?"Pause pour un d\u00e9rangement. Ajuster pour le temps d'un coll\u00e8gue.":"Repartir en production pour continuer le m\u00eame OF.";
 }
 function renderChips(){
   const box=$("refChips");box.innerHTML="";
@@ -274,7 +277,7 @@ function lotHint(l,t){
   const n=t.n;
   let s=l.date+" "+hm(l.started)+"\u2013"+hm(l.ended)+" \u00b7 route "+fmt(n.setup)+" \u00b7 prod "+fmt(n.prod)+" \u00b7 pause "+fmt(l.pauseMs);
   if(l.setupAdjMs||l.prodAdjMs)s+=" \u00b7 dont ajust. route "+fmtSigned(l.setupAdjMs||0)+" / prod "+fmtSigned(l.prodAdjMs||0);
-  s+="<br>Temps pi\u00e8ce "+(t.piece==null?"n/c":fmt(t.piece))+" \u00b7 charg\u00e9 "+(t.charge==null?"n/c":fmt(t.charge));
+  s+="<br>Temps pi\u00e8ce "+msLabel(t.piece)+" \u00b7 charg\u00e9 "+msLabel(t.charge);
   return s;
 }
 function renderJournal(){
@@ -320,7 +323,7 @@ function renderAnalyse(){
   rows.forEach(x=>{
     const piece=x.qty?x.prod/x.qty:null,charge=x.qty?(x.setup+x.prod)/x.qty:null;
     const div=document.createElement("div");div.className="card";
-    div.innerHTML="<div><b>"+x.ref+"</b></div><div class='hint'>"+x.n+" OF \u00b7 "+x.qty+" pi\u00e8ces<br>Mise en route "+fmt(x.setup)+" \u00b7 prod "+fmt(x.prod)+" \u00b7 pauses "+fmt(x.pause)+"<br><b>Temps pi\u00e8ce "+(piece==null?"n/c":fmt(piece))+" \u00b7 charg\u00e9 "+(charge==null?"n/c":fmt(charge))+"</b></div>";
+    div.innerHTML="<div><b>"+x.ref+"</b></div><div class='hint'>"+x.n+" OF \u00b7 "+x.qty+" pi\u00e8ces<br>Mise en route "+fmt(x.setup)+" \u00b7 prod "+fmt(x.prod)+" \u00b7 pauses "+fmt(x.pause)+"<br><b>Temps pi\u00e8ce "+msLabel(piece)+"<br>Temps charg\u00e9 "+msLabel(charge)+"</b></div>";
     box.appendChild(div);
   });
 }
@@ -345,10 +348,10 @@ $("newRef").addEventListener("keydown",e=>{if(e.key==="Enter")$("btnAddRef").cli
   });
 });
 $("btnCsv").onclick=()=>{
-  const lines=["\uFEFF","of;date;ref;qte;route_badge_sec;prod_badge_sec;route_ajust_sec;prod_ajust_sec;route_net_sec;prod_net_sec;pause_sec;total_travail_sec;temps_piece_sec;temps_charge_sec;debut;fin"];
+  const lines=["\uFEFF","of;date;ref;qte;route_badge_sec;prod_badge_sec;route_ajust_sec;prod_ajust_sec;route_net_sec;prod_net_sec;pause_sec;total_travail_sec;temps_piece_sec;temps_charge_sec;temps_piece_h;temps_charge_h;debut;fin"];
   [...db.lots].sort((a,b)=>a.started-b.started).forEach(l=>{
     const t=pieceTimes(l);
-    lines.push([esc(l.of),l.date,esc(l.ref),l.qty,sec(l.setupMs),sec(l.prodMs),sec(l.setupAdjMs),sec(l.prodAdjMs),sec(t.n.setup),sec(t.n.prod),sec(l.pauseMs),sec(t.work),t.piece==null?"":Math.round(t.piece/1000),t.charge==null?"":Math.round(t.charge/1000),new Date(l.started).toISOString(),new Date(l.ended).toISOString()].join(";"));
+    lines.push([esc(l.of),l.date,esc(l.ref),l.qty,sec(l.setupMs),sec(l.prodMs),sec(l.setupAdjMs),sec(l.prodAdjMs),sec(t.n.setup),sec(t.n.prod),sec(l.pauseMs),sec(t.work),t.piece==null?"":Math.round(t.piece/1000),t.charge==null?"":Math.round(t.charge/1000),t.piece==null?"":hNum(t.piece).replace(/\s/g,""),t.charge==null?"":hNum(t.charge).replace(/\s/g,""),new Date(l.started).toISOString(),new Date(l.ended).toISOString()].join(";"));
   });
   lines.push("","Segments","of;kind;debut;fin;duree_sec");
   db.lots.forEach(l=>{(l.segs||[]).forEach(s=>{if(!s.end)return;lines.push([esc(l.of),s.kind,new Date(s.start).toISOString(),new Date(s.end).toISOString(),sec(s.end-s.start)].join(";"))})});
