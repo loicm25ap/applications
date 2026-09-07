@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0e0f10"/>
 <title>Pointeuse OF</title>
 <style>
-:root{--bg:#0e0f10;--panel:#17191b;--panel-2:#1e2124;--line:#2a2e32;--text:#e8e6e1;--muted:#9a958c;--gold:#c4a574;--gold-dim:#8a7349;--go:#2f6b4a;--go-bg:#1a2e22;--warn:#b8893a;--warn-bg:#2a2316;--stop:#8a4545;--stop-bg:#2c1b1b}
+:root{--bg:#0e0f10;--panel:#17191b;--panel-2:#1e2124;--line:#2a2e32;--text:#e8e6e1;--muted:#9a958c;--gold:#c4a574;--gold-dim:#8a7349;--go:#2f6b4a;--warn:#b8893a;--stop:#8a4545}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}html,body{margin:0;touch-action:manipulation}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 header{padding:12px 14px 8px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
 .clock{color:var(--muted);font-size:12px;margin-top:4px}
@@ -71,15 +71,25 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 <div class="lab">Quantité du lot</div>
 <input id="qtyIn" type="number" min="1" step="1" inputmode="numeric" placeholder="Nombre de pièces"/>
 <button class="btn gold full" id="btnStart">Démarrer mise en route</button>
-<p class="hint">Le chrono commence en mise en route. Ensuite : Passer en production. Les pauses ne comptent pas dans le temps pièce.</p>
+<button class="btn go full" id="btnStartProd" style="margin-top:8px">Démarrer en production</button>
+<p class="hint">Si le collègue a déjà fait la mise en route : démarre en production, puis ajoute son temps avec Ajuster. Les pauses ne comptent pas dans le temps pièce.</p>
 </div>
 <div id="runBox" style="display:none">
 <div class="actions">
 <button class="btn go" id="btnProd">Passer en production</button>
 <button class="btn warn" id="btnPause">Pause</button>
 </div>
-<button class="btn stop full" id="btnEnd">Terminer le lot</button>
+<button class="btn gold full" id="btnAdjNow">Ajuster les temps</button>
+<button class="btn stop full" id="btnEnd" style="margin-top:8px">Terminer le lot</button>
 <p class="hint" id="runHint"></p>
+</div>
+<div id="adjBox" class="form" style="display:none">
+<div class="lab" id="adjTitle">Ajuster les temps</div>
+<p class="hint">Minutes en plus ou en moins. Ex. 60 ou -15. Pas de commentaire.</p>
+<input id="adjSetup" inputmode="decimal" placeholder="Mise en route (min) : 25 ou -10"/>
+<input id="adjProd" inputmode="decimal" placeholder="Production (min) : 60 ou -45"/>
+<button class="btn gold full" id="btnAdjOk">Appliquer</button>
+<button class="btn full" id="btnAdjCancel" style="margin-top:8px">Fermer</button>
 </div>
 </section>
 <section class="screen" id="screen-journal">
@@ -100,7 +110,7 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 <p class="hint">Les réfs restent d’une semaine sur l’autre. Supprimer une réf n’efface pas les lots déjà pointés.</p>
 </section>
 <section class="screen" id="screen-analyse">
-<p class="hint" style="margin-top:0">Temps pièce = production ÷ qté. Temps chargé = (mise en route + production) ÷ qté. Les pauses sont hors calcul.</p>
+<p class="hint" style="margin-top:0">Temps pièce = production nette ÷ qté. Temps chargé = (mise en route nette + production nette) ÷ qté. Pauses hors calcul.</p>
 <div id="analyse"></div>
 </section>
 </main>
@@ -110,21 +120,29 @@ const $=id=>document.getElementById(id);
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{refs:[],lots:[],current:null}}catch{return{refs:[],lots:[],current:null}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function ymd(d){const x=d instanceof Date?d:new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")}
-function fmt(ms){if(ms<0)ms=0;const s=Math.floor(ms/1000);return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function fmt(ms){ms=Math.max(0,ms||0);const s=Math.floor(ms/1000);return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function fmtSigned(ms){const n=ms||0,sign=n<0?"-":"+";return sign+fmt(Math.abs(n))}
 function hm(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
 function sec(ms){return Math.round((ms||0)/1000)}
 function esc(s){return String(s||"").replace(/[;&]/g,",")}
-let db=load(),screen="lot",selRef="";
+function parseMin(v){v=String(v||"").trim().replace(",",".");if(!v)return 0;const n=Number(v);return isFinite(n)?Math.round(n*60000):null}
+function nets(o,liveSetup,liveProd){
+  const s=Math.max(0,(liveSetup!=null?liveSetup:o.setupMs||0)+(o.setupAdjMs||0));
+  const p=Math.max(0,(liveProd!=null?liveProd:o.prodMs||0)+(o.prodAdjMs||0));
+  return{setup:s,prod:p,work:s+p};
+}
+let db=load(),screen="lot",selRef="",adjOf=null;
 if(!Array.isArray(db.refs))db.refs=[];
 if(!Array.isArray(db.lots))db.lots=[];
 function live(){
-  const c=db.current;if(!c)return{setup:0,prod:0,pause:0,phase:0,work:0};
+  const c=db.current;if(!c)return{setup:0,prod:0,pause:0,phase:0,work:0,nSetup:0,nProd:0,nWork:0};
   const add=Date.now()-c.phaseStarted;
   let setup=c.setupMs,prod=c.prodMs,pause=c.pauseMs,phase=add;
   if(c.phase==="setup")setup+=add;
   else if(c.phase==="prod")prod+=add;
   else pause+=add;
-  return{setup,prod,pause,phase,work:setup+prod};
+  const n=nets(c,setup,prod);
+  return{setup,prod,pause,phase,work:setup+prod,nSetup:n.setup,nProd:n.prod,nWork:n.work};
 }
 function closePhase(){
   const c=db.current;if(!c)return;
@@ -139,8 +157,8 @@ function startPhase(kind){
   c.phase=kind;c.phaseStarted=Date.now();
   c.segs.push({kind,start:Date.now()});
 }
-function ofExists(num,except){return db.lots.some(l=>l.of===num)||(db.current&&db.current.of===num&&db.current.of!==except)}
-function startLot(){
+function ofExists(num){return db.lots.some(l=>l.of===num)||(db.current&&db.current.of===num)}
+function startLot(phase){
   if(db.current){alert("Terminez d'abord le lot en cours.");return}
   const of=($("ofIn").value||"").trim();
   const ref=($("refIn").value||selRef||"").trim();
@@ -151,7 +169,8 @@ function startLot(){
   if(ofExists(of)){alert("Cet OF existe déjà. Chaque lancement a un numéro unique.");return}
   if(!db.refs.includes(ref))db.refs.push(ref);
   selRef=ref;
-  db.current={of,ref,qty,phase:"setup",phaseStarted:Date.now(),setupMs:0,prodMs:0,pauseMs:0,started:Date.now(),beforePause:"setup",segs:[{kind:"setup",start:Date.now()}]};
+  const kind=phase==="prod"?"prod":"setup";
+  db.current={of,ref,qty,phase:kind,phaseStarted:Date.now(),setupMs:0,prodMs:0,pauseMs:0,setupAdjMs:0,prodAdjMs:0,started:Date.now(),beforePause:kind,segs:[{kind,start:Date.now()}]};
   $("ofIn").value="";$("qtyIn").value="";
   save();render();
 }
@@ -171,12 +190,37 @@ function endLot(){
   const c=db.current;if(!c)return;
   if(!confirm("Terminer l'OF "+c.of+" ?"))return;
   closePhase();
-  const lot={of:c.of,ref:c.ref,qty:c.qty,setupMs:c.setupMs,prodMs:c.prodMs,pauseMs:c.pauseMs,started:c.started,ended:Date.now(),date:ymd(c.started),segs:c.segs};
-  db.lots.push(lot);db.current=null;save();render();
+  const lot={of:c.of,ref:c.ref,qty:c.qty,setupMs:c.setupMs,prodMs:c.prodMs,pauseMs:c.pauseMs,setupAdjMs:c.setupAdjMs||0,prodAdjMs:c.prodAdjMs||0,started:c.started,ended:Date.now(),date:ymd(c.started),segs:c.segs};
+  db.lots.push(lot);db.current=null;adjOf=null;$("adjBox").style.display="none";save();render();
 }
 function pieceTimes(l){
-  const work=l.setupMs+l.prodMs;
-  return{work,piece:l.qty?l.prodMs/l.qty:null,charge:l.qty?work/l.qty:null};
+  const n=nets(l);
+  return{work:n.work,piece:l.qty?n.prod/l.qty:null,charge:l.qty?n.work/l.qty:null,n};
+}
+function openAdj(ofNum){
+  adjOf=ofNum|| (db.current?db.current.of:null);
+  if(!adjOf)return;
+  $("adjTitle").textContent="Ajuster \u00b7 OF "+adjOf;
+  $("adjSetup").value="";$("adjProd").value="";
+  $("adjBox").style.display="block";
+  screen="lot";renderNav();
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id==="screen-lot"));
+}
+function applyAdj(){
+  if(!adjOf)return;
+  const aS=parseMin($("adjSetup").value),aP=parseMin($("adjProd").value);
+  if(aS==null||aP==null){alert("Minutes invalides.");return}
+  if(!aS&&!aP){alert("Indiquez au moins un ajustement.");return}
+  if(db.current&&db.current.of===adjOf){
+    db.current.setupAdjMs=(db.current.setupAdjMs||0)+aS;
+    db.current.prodAdjMs=(db.current.prodAdjMs||0)+aP;
+  }else{
+    const l=db.lots.find(x=>x.of===adjOf);if(!l)return;
+    l.setupAdjMs=(l.setupAdjMs||0)+aS;
+    l.prodAdjMs=(l.prodAdjMs||0)+aP;
+  }
+  $("adjSetup").value="";$("adjProd").value="";
+  save();render();
 }
 function renderNav(){
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.s===screen));
@@ -193,14 +237,17 @@ function renderNow(){
   const L=live();
   $("nowTitle").textContent=c.ref+" \u00b7 OF "+c.of;
   $("nowTime").textContent=fmt(L.phase);
-  $("nowMeta").textContent=c.qty+" pi\u00e8ce"+(c.qty>1?"s":"")+" \u00b7 d\u00e9but "+hm(c.started);
+  const adjBits=[];
+  if(c.setupAdjMs)adjBits.push("route "+fmtSigned(c.setupAdjMs));
+  if(c.prodAdjMs)adjBits.push("prod "+fmtSigned(c.prodAdjMs));
+  $("nowMeta").textContent=c.qty+" pi\u00e8ce"+(c.qty>1?"s":"")+" \u00b7 d\u00e9but "+hm(c.started)+(adjBits.length?" \u00b7 ajust\u00e9 "+adjBits.join(" / "):"");
   ph.style.display="inline-block";sp.style.display="grid";run.style.display="block";st.style.display="none";
   ph.className="phase "+c.phase;
   ph.textContent=c.phase==="setup"?"Mise en route":c.phase==="prod"?"Production":"Pause \u2014 le temps pi\u00e8ce est fig\u00e9";
-  $("kSetup").textContent=fmt(L.setup);$("kProd").textContent=fmt(L.prod);$("kPause").textContent=fmt(L.pause);$("kWork").textContent=fmt(L.work);
+  $("kSetup").textContent=fmt(L.nSetup);$("kProd").textContent=fmt(L.nProd);$("kPause").textContent=fmt(L.pause);$("kWork").textContent=fmt(L.nWork);
   $("btnProd").style.display=c.phase==="prod"?"none":"";
   $("btnPause").textContent=c.phase==="pause"?"Reprendre":"Pause / d\u00e9rangement";
-  $("runHint").textContent=c.phase==="setup"?"R\u00e9glez, puis passez en production.":c.phase==="prod"?"Les interruptions se notent avec Pause. Terminer le lot \u00e0 la derni\u00e8re pi\u00e8ce.":"Reprendre pour continuer le m\u00eame OF.";
+  $("runHint").textContent=c.phase==="setup"?"R\u00e9glez, puis passez en production.":c.phase==="prod"?"Pause pour un d\u00e9rangement. Ajuster pour le temps d'un coll\u00e8gue.":"Reprendre pour continuer le m\u00eame OF.";
 }
 function renderChips(){
   const box=$("refChips");box.innerHTML="";
@@ -210,20 +257,29 @@ function renderChips(){
     box.appendChild(b);
   });
 }
+function lotHint(l,t){
+  const n=t.n;
+  let s=l.date+" "+hm(l.started)+"\u2013"+hm(l.ended)+" \u00b7 route "+fmt(n.setup)+" \u00b7 prod "+fmt(n.prod)+" \u00b7 pause "+fmt(l.pauseMs);
+  if(l.setupAdjMs||l.prodAdjMs)s+=" \u00b7 dont ajust. route "+fmtSigned(l.setupAdjMs||0)+" / prod "+fmtSigned(l.prodAdjMs||0);
+  s+="<br>Temps pi\u00e8ce "+(t.piece==null?"n/c":fmt(t.piece))+" \u00b7 charg\u00e9 "+(t.charge==null?"n/c":fmt(t.charge));
+  return s;
+}
 function renderJournal(){
   const box=$("journal");const lots=[...db.lots].sort((a,b)=>b.started-a.started);
   if(db.current){
     const L=live();
-    box.innerHTML="<div class='card'><div><b>En cours \u00b7 OF "+db.current.of+"</b></div><div class='hint'>"+db.current.ref+" \u00b7 "+db.current.qty+" p. \u00b7 mise en route "+fmt(L.setup)+" \u00b7 prod "+fmt(L.prod)+" \u00b7 pause "+fmt(L.pause)+"</div></div>";
+    box.innerHTML="<div class='card'><div><b>En cours \u00b7 OF "+db.current.of+"</b></div><div class='hint'>"+db.current.ref+" \u00b7 "+db.current.qty+" p. \u00b7 route "+fmt(L.nSetup)+" \u00b7 prod "+fmt(L.nProd)+" \u00b7 pause "+fmt(L.pause)+"</div></div>";
   }else box.innerHTML="";
   if(!lots.length&&!db.current){box.innerHTML+="<p class='hint'>Aucun lot termin\u00e9.</p>";return}
   lots.forEach(l=>{
     const t=pieceTimes(l);
     const div=document.createElement("div");div.className="card";
-    div.innerHTML="<div><b>OF "+l.of+"</b> \u00b7 "+l.ref+" \u00b7 "+l.qty+" p.</div><div class='hint'>"+l.date+" "+hm(l.started)+"\u2013"+hm(l.ended)+" \u00b7 route "+fmt(l.setupMs)+" \u00b7 prod "+fmt(l.prodMs)+" \u00b7 pause "+fmt(l.pauseMs)+"<br>Temps pi\u00e8ce "+(t.piece==null?"n/c":fmt(t.piece))+" \u00b7 charg\u00e9 "+(t.charge==null?"n/c":fmt(t.charge))+"</div>";
+    div.innerHTML="<div><b>OF "+l.of+"</b> \u00b7 "+l.ref+" \u00b7 "+l.qty+" p.</div><div class='hint'>"+lotHint(l,t)+"</div>";
+    const row=document.createElement("div");row.className="row-btns";
+    const adj=document.createElement("button");adj.className="btn sm gold";adj.textContent="Ajuster";adj.onclick=()=>openAdj(l.of);
     const del=document.createElement("button");del.className="btn sm";del.textContent="Supprimer";
     del.onclick=()=>{if(!confirm("Supprimer l'OF "+l.of+" ?"))return;db.lots=db.lots.filter(x=>x!==l);save();render()};
-    div.appendChild(del);box.appendChild(div);
+    row.append(adj,del);div.appendChild(row);box.appendChild(div);
   });
 }
 function renderRefs(){
@@ -241,8 +297,9 @@ function renderRefs(){
 function renderAnalyse(){
   const by={};
   db.lots.forEach(l=>{
+    const n=nets(l);
     if(!by[l.ref])by[l.ref]={ref:l.ref,n:0,qty:0,setup:0,prod:0,pause:0};
-    const x=by[l.ref];x.n++;x.qty+=l.qty;x.setup+=l.setupMs;x.prod+=l.prodMs;x.pause+=l.pauseMs;
+    const x=by[l.ref];x.n++;x.qty+=l.qty;x.setup+=n.setup;x.prod+=n.prod;x.pause+=l.pauseMs||0;
   });
   const box=$("analyse");box.innerHTML="";
   const rows=Object.values(by).sort((a,b)=>a.ref.localeCompare(b.ref,"fr"));
@@ -256,18 +313,22 @@ function renderAnalyse(){
 }
 function render(){renderNav();renderChips();renderNow();renderJournal();renderRefs();renderAnalyse()}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{screen=b.dataset.s;render()});
-$("btnStart").onclick=startLot;
+$("btnStart").onclick=()=>startLot("setup");
+$("btnStartProd").onclick=()=>startLot("prod");
 $("btnProd").onclick=toProd;
 $("btnPause").onclick=togglePause;
 $("btnEnd").onclick=endLot;
+$("btnAdjNow").onclick=()=>openAdj(db.current&&db.current.of);
+$("btnAdjOk").onclick=applyAdj;
+$("btnAdjCancel").onclick=()=>{adjOf=null;$("adjBox").style.display="none"};
 $("btnAddRef").onclick=()=>{const v=$("newRef").value.trim();if(!v)return;if(db.refs.includes(v)){alert("D\u00e9j\u00e0 dans le catalogue.");return}db.refs.push(v);$("newRef").value="";save();render()};
 $("newRef").addEventListener("keydown",e=>{if(e.key==="Enter")$("btnAddRef").click()});
 $("refIn").addEventListener("input",()=>{selRef=$("refIn").value.trim();renderChips()});
 $("btnCsv").onclick=()=>{
-  const lines=["\uFEFF","of;date;ref;qte;mise_en_route_sec;prod_sec;pause_sec;total_travail_sec;temps_piece_sec;temps_charge_sec;debut;fin"];
+  const lines=["\uFEFF","of;date;ref;qte;route_badge_sec;prod_badge_sec;route_ajust_sec;prod_ajust_sec;route_net_sec;prod_net_sec;pause_sec;total_travail_sec;temps_piece_sec;temps_charge_sec;debut;fin"];
   [...db.lots].sort((a,b)=>a.started-b.started).forEach(l=>{
     const t=pieceTimes(l);
-    lines.push([esc(l.of),l.date,esc(l.ref),l.qty,sec(l.setupMs),sec(l.prodMs),sec(l.pauseMs),sec(t.work),t.piece==null?"":Math.round(t.piece/1000),t.charge==null?"":Math.round(t.charge/1000),new Date(l.started).toISOString(),new Date(l.ended).toISOString()].join(";"));
+    lines.push([esc(l.of),l.date,esc(l.ref),l.qty,sec(l.setupMs),sec(l.prodMs),sec(l.setupAdjMs),sec(l.prodAdjMs),sec(t.n.setup),sec(t.n.prod),sec(l.pauseMs),sec(t.work),t.piece==null?"":Math.round(t.piece/1000),t.charge==null?"":Math.round(t.charge/1000),new Date(l.started).toISOString(),new Date(l.ended).toISOString()].join(";"));
   });
   lines.push("","Segments","of;kind;debut;fin;duree_sec");
   db.lots.forEach(l=>{(l.segs||[]).forEach(s=>{if(!s.end)return;lines.push([esc(l.of),s.kind,new Date(s.start).toISOString(),new Date(s.end).toISOString(),sec(s.end-s.start)].join(";"))})});
