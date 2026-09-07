@@ -1,76 +1,281 @@
 <!DOCTYPE html>
 <html lang="fr"><head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#0e0f10"/>
-<title>Pointeuse</title>
+<title>Pointeuse OF</title>
 <style>
-:root{--bg:#0e0f10;--panel:#17191b;--panel-2:#1e2124;--line:#2a2e32;--text:#e8e6e1;--muted:#9a958c;--gold:#c4a574;--gold-dim:#8a7349;--go:#3d7a5a;--stop:#8a4a45}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-header{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
-h1{margin:0;font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}.clock{color:var(--muted);font-size:12px}
-main{max-width:560px;margin:0 auto;padding:12px}
-.now{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;position:sticky;top:0}
-.label{color:var(--muted);font-size:11px;text-transform:uppercase}.task{font-size:20px;margin:4px 0}.elapsed{font-size:34px;font-weight:600;color:var(--gold)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.task-btn{background:var(--panel-2);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:18px 10px;font-size:16px;min-height:72px;width:100%}
-.task-btn.active{background:#243328;border-color:var(--go);color:#d7eadc}
-.row-btns{display:flex;gap:8px;margin-bottom:12px}
-button,.icon-btn{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;padding:12px 14px;font-size:15px;min-height:48px}
-.btn-stop{border-color:var(--stop);color:#f0d0cd;flex:1}.btn-gold{border-color:var(--gold-dim);color:var(--gold)}.btn-interrupt{flex:1}.btn-edit{width:100%}.btn-edit.on{border-color:var(--gold-dim);color:var(--gold)}
-.edit-panel{display:none;margin-bottom:14px}body.editing .edit-panel{display:block}body.editing .grid,body.editing .row-btns{display:none}
-.edit-item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;margin-bottom:8px}
-.edit-item input,.add input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:12px;font-size:16px}
-.edit-tools{display:flex;gap:6px}.icon-btn{min-width:48px;padding:0;font-size:18px}.icon-btn.danger{border-color:var(--stop);color:#f0d0cd}
-.add{display:flex;gap:8px;margin-top:10px}.add input{flex:1}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px 4px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:11px;text-transform:uppercase}
-.totals{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-h2,.totals h2{font-size:12px;color:var(--muted);text-transform:uppercase;margin:16px 0 8px}.totals h2{margin:0 0 8px}
-.hint{color:var(--muted);font-size:12px;margin-top:12px}.del-log{color:var(--muted);border:none;background:none;min-height:36px}
-.bar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.bar button{flex:1;min-width:140px}
+:root{--bg:#0e0f10;--panel:#17191b;--panel-2:#1e2124;--line:#2a2e32;--text:#e8e6e1;--muted:#9a958c;--gold:#c4a574;--gold-dim:#8a7349;--go:#2f6b4a;--go-bg:#1a2e22;--warn:#b8893a;--warn-bg:#2a2316;--stop:#8a4545;--stop-bg:#2c1b1b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}html,body{margin:0;touch-action:manipulation}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{padding:12px 14px 8px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.clock{color:var(--muted);font-size:12px;margin-top:4px}
+nav{display:flex;gap:5px;padding:8px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+nav button{flex:1;min-height:42px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;font-size:12px}nav button.on{border-color:var(--gold-dim);color:var(--gold)}
+main{max-width:560px;margin:0 auto;padding:12px 12px 40px}.screen{display:none}.screen.on{display:block}
+.now{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.lab{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.big{font-size:34px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--gold);margin:4px 0}
+.meta{color:var(--muted);font-size:13px;margin-top:4px}
+.phase{display:inline-block;font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);margin-top:8px}
+.phase.setup{color:#e6d3a8;border-color:var(--warn)}.phase.prod{color:#cfe8d6;border-color:var(--go)}.phase.pause{color:#e8c4c4;border-color:var(--stop)}
+.form{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.form input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;margin:6px 0 10px;color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{border:1px solid var(--line);background:var(--panel-2);color:var(--text);border-radius:99px;padding:8px 12px;min-height:40px;font-size:13px}
+.chip.on{border-color:var(--gold-dim);color:var(--gold)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+button{font:inherit;color:var(--text)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;min-height:48px;font-size:15px}
+.btn.gold{border-color:var(--gold-dim);color:var(--gold)}.btn.go{border-color:var(--go);color:#cfe8d6;flex:1}.btn.warn{border-color:var(--warn);color:#e6d3a8;flex:1}.btn.stop{border-color:var(--stop);color:#e8c4c4;flex:1}.btn.full{width:100%}
+.btn.sm{min-height:42px;font-size:13px;padding:8px 14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.hint{color:var(--muted);font-size:12px;line-height:1.45}
+h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px}
+.kpi b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.row-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 </style></head><body>
-<header><h1>Pointeuse</h1><div class="clock" id="clock"></div></header>
+<header>
+<h1>Pointeuse OF</h1>
+<div class="clock" id="clock"></div>
+</header>
+<nav>
+<button class="on" data-s="lot">Lot</button>
+<button data-s="journal">Journal</button>
+<button data-s="refs">Réfs</button>
+<button data-s="analyse">Analyse</button>
+</nav>
 <main>
-<div class="now"><div class="label">En cours</div><div class="task" id="currentTask">— arrêté —</div><div class="elapsed" id="elapsed">00:00:00</div></div>
-<div class="grid" id="buttons"></div>
-<div class="row-btns"><button class="btn-stop" id="btnStop">Stop</button><button class="btn-interrupt" id="btnInterrupt">Interruption</button></div>
-<button class="btn-edit" id="btnEdit">Modifier les tâches</button>
-<div class="edit-panel"><div id="editList"></div><div class="add"><input id="newTask" placeholder="Nouvelle tâche" autocomplete="off"/><button class="btn-gold" id="btnAdd">Ajouter</button></div></div>
-<div class="bar"><button class="btn-gold" id="btnCopy">Copier pour Grok</button><button id="btnCsv">CSV</button><button id="btnClearDay">Vider le jour</button></div>
-<div class="totals" id="totals"></div>
-<h2>Journal du jour</h2>
-<table><thead><tr><th>Début</th><th>Fin</th><th>Durée</th><th>Tâche</th><th></th></tr></thead><tbody id="log"></tbody></table>
-<p class="hint">Heures sur ce téléphone seulement. Modifier : renommer, ordre, supprimer.</p>
+<section class="screen on" id="screen-lot">
+<div class="now">
+<div class="lab">En cours</div>
+<div id="nowTitle" style="font-size:20px;margin:4px 0">— arrêté —</div>
+<div class="big" id="nowTime">00:00:00</div>
+<div class="meta" id="nowMeta"></div>
+<div class="phase" id="nowPhase" style="display:none"></div>
+<div class="split" id="nowSplit" style="display:none">
+<div class="kpi"><div class="lab">Mise en route</div><b id="kSetup">00:00:00</b></div>
+<div class="kpi"><div class="lab">Production</div><b id="kProd">00:00:00</b></div>
+<div class="kpi"><div class="lab">Pauses</div><b id="kPause">00:00:00</b></div>
+<div class="kpi"><div class="lab">Total travail</div><b id="kWork">00:00:00</b></div>
+</div>
+</div>
+<div id="startBox" class="form">
+<div class="lab">Numéro d'OF</div>
+<input id="ofIn" placeholder="OF unique du lancement" autocomplete="off"/>
+<div class="lab">Référence pièce</div>
+<div class="chips" id="refChips"></div>
+<input id="refIn" placeholder="Ou taper une nouvelle réf" autocomplete="off"/>
+<div class="lab">Quantité du lot</div>
+<input id="qtyIn" type="number" min="1" step="1" inputmode="numeric" placeholder="Nombre de pièces"/>
+<button class="btn gold full" id="btnStart">Démarrer mise en route</button>
+<p class="hint">Le chrono commence en mise en route. Ensuite : Passer en production. Les pauses ne comptent pas dans le temps pièce.</p>
+</div>
+<div id="runBox" style="display:none">
+<div class="actions">
+<button class="btn go" id="btnProd">Passer en production</button>
+<button class="btn warn" id="btnPause">Pause</button>
+</div>
+<button class="btn stop full" id="btnEnd">Terminer le lot</button>
+<p class="hint" id="runHint"></p>
+</div>
+</section>
+<section class="screen" id="screen-journal">
+<div class="actions">
+<button class="btn gold" id="btnCsv">Exporter CSV</button>
+<button class="btn" id="btnBak">Sauvegarder JSON</button>
+<button class="btn" id="btnImp">Importer</button>
+</div>
+<input type="file" id="bakFile" accept="application/json,.json" style="display:none"/>
+<div id="journal"></div>
+</section>
+<section class="screen" id="screen-refs">
+<div class="form">
+<input id="newRef" placeholder="Nouvelle référence" autocomplete="off"/>
+<button class="btn gold full" id="btnAddRef">Ajouter la réf</button>
+</div>
+<div id="refList"></div>
+<p class="hint">Les réfs restent d’une semaine sur l’autre. Supprimer une réf n’efface pas les lots déjà pointés.</p>
+</section>
+<section class="screen" id="screen-analyse">
+<p class="hint" style="margin-top:0">Temps pièce = production ÷ qté. Temps chargé = (mise en route + production) ÷ qté. Les pauses sont hors calcul.</p>
+<div id="analyse"></div>
+</section>
 </main>
 <script>
-const DEFAULT_TASKS=["Tâche A","Tâche B","Admin","Réunion"];const $=id=>document.getElementById(id);
-function load(k,f){try{const v=JSON.parse(localStorage.getItem(k));return v??f}catch{return f}}
-function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
-function todayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
-let tasks=load("p_tasks",DEFAULT_TASKS),current=load("p_current",null),logsByDay=load("p_logs",{}),editing=false;
-if(!logsByDay[todayKey()])logsByDay[todayKey()]=[];
+const KEY="ptz_of_v1";
+const $=id=>document.getElementById(id);
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{refs:[],lots:[],current:null}}catch{return{refs:[],lots:[],current:null}}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function ymd(d){const x=d instanceof Date?d:new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")}
 function fmt(ms){if(ms<0)ms=0;const s=Math.floor(ms/1000);return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
 function hm(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
-function persist(){save("p_tasks",tasks);save("p_current",current);save("p_logs",logsByDay)}
-function stopCurrent(){if(!current)return;logsByDay[todayKey()].push({task:current.task,start:current.start,end:Date.now()});current=null;persist()}
-function startTask(name){if(editing)return;if(current&&current.task===name)return;stopCurrent();current={task:name,start:Date.now()};persist();render()}
-function renderButtons(){const box=$("buttons");box.innerHTML="";tasks.forEach(name=>{const b=document.createElement("button");b.className="task-btn"+(current&&current.task===name?" active":"");b.textContent=name;b.onclick=()=>startTask(name);box.appendChild(b)})}
-function renderEdit(){document.body.classList.toggle("editing",editing);$("btnEdit").classList.toggle("on",editing);$("btnEdit").textContent=editing?"Terminer":"Modifier les tâches";const list=$("editList");list.innerHTML="";tasks.forEach((name,i)=>{const row=document.createElement("div");row.className="edit-item";const input=document.createElement("input");input.value=name;input.onchange=input.onblur=()=>renameTask(i,input.value);const tools=document.createElement("div");tools.className="edit-tools";const up=document.createElement("button");up.className="icon-btn";up.textContent="\u2191";up.onclick=()=>moveTask(i,-1);const down=document.createElement("button");down.className="icon-btn";down.textContent="\u2193";down.onclick=()=>moveTask(i,1);const del=document.createElement("button");del.className="icon-btn danger";del.textContent="\u00d7";del.onclick=()=>removeTask(i);tools.append(up,down,del);row.append(input,tools);list.appendChild(row)})}
-function renameTask(i,raw){const name=raw.trim();if(!name){render();return}if(tasks.includes(name)&&tasks[i]!==name){alert("Cette tâche existe déjà.");render();return}const old=tasks[i];if(old===name)return;tasks[i]=name;if(current&&current.task===old)current.task=name;persist();render()}
-function moveTask(i,dir){const j=i+dir;if(j<0||j>=tasks.length)return;const t=tasks[i];tasks[i]=tasks[j];tasks[j]=t;persist();render()}
-function removeTask(i){const name=tasks[i];if(current&&current.task===name){alert("Stop d\u2019abord, puis supprimez.");return}if(!confirm("Retirer \u00ab "+name+" \u00bb ?"))return;tasks.splice(i,1);persist();render()}
-function renderLog(){const day=logsByDay[todayKey()]||[];$("log").innerHTML=day.map((row,i)=>"<tr><td>"+hm(row.start)+"</td><td>"+hm(row.end)+"</td><td>"+fmt(row.end-row.start)+"</td><td>"+row.task+"</td><td><button class='del-log' data-i='"+i+"'>\u00d7</button></td></tr>").join("");$("log").querySelectorAll(".del-log").forEach(btn=>btn.onclick=()=>{logsByDay[todayKey()].splice(Number(btn.dataset.i),1);persist();render()});const sums={};day.forEach(r=>sums[r.task]=(sums[r.task]||0)+(r.end-r.start));if(current)sums[current.task]=(sums[current.task]||0)+(Date.now()-current.start);const lines=Object.entries(sums).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+" \u2014 "+fmt(v));$("totals").innerHTML="<h2>Totaux du "+todayKey()+"</h2>"+(lines.length?lines.map(l=>"<div>"+l+"</div>").join(""):"<div>Aucune entrée</div>")}
-function renderNow(){$("clock").textContent=new Date().toLocaleString("fr-FR");if(current){$("currentTask").textContent=current.task;$("elapsed").textContent=fmt(Date.now()-current.start)}else{$("currentTask").textContent="\u2014 arrêté \u2014";$("elapsed").textContent="00:00:00"}}
-function render(){renderButtons();renderEdit();renderLog();renderNow()}
-function dayText(){const day=logsByDay[todayKey()]||[];const rows=day.map(r=>hm(r.start)+"\u2013"+hm(r.end)+"  "+fmt(r.end-r.start)+"  "+r.task);if(current)rows.push(hm(current.start)+"\u2013\u2026  en cours  "+current.task);const sums={};day.forEach(r=>sums[r.task]=(sums[r.task]||0)+(r.end-r.start));return"Journal "+todayKey()+"\n\n"+rows.join("\n")+"\n\nTotaux :\n"+Object.entries(sums).map(([k,v])=>"- "+k+" : "+fmt(v)).join("\n")+"\n\nPeux-tu faire un tableau (tâche, début, fin, durée nette) et un texte court de justification par tâche ?"}
-$("btnStop").onclick=()=>{stopCurrent();persist();render()};
-$("btnInterrupt").onclick=()=>startTask("Interruption");
-$("btnEdit").onclick=()=>{editing=!editing;render()};
-$("btnAdd").onclick=()=>{const v=$("newTask").value.trim();if(!v)return;if(tasks.includes(v)){alert("Cette tâche existe déjà.");return}tasks.push(v);$("newTask").value="";persist();render()};
-$("newTask").addEventListener("keydown",e=>{if(e.key==="Enter")$("btnAdd").click()});
-$("btnCopy").onclick=async()=>{const t=dayText();try{await navigator.clipboard.writeText(t);alert("Copié. Collez dans Grok.")}catch{prompt("Copiez :",t)}};
-$("btnCsv").onclick=()=>{const day=logsByDay[todayKey()]||[];const lines=["debut;fin;duree_sec;tache"];day.forEach(r=>lines.push(new Date(r.start).toISOString()+";"+new Date(r.end).toISOString()+";"+Math.round((r.end-r.start)/1000)+";"+r.task.replace(/;/g,",")));const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="pointeuse-"+todayKey()+".csv";a.click()};
-$("btnClearDay").onclick=()=>{if(!confirm("Effacer le journal d\u2019aujourd\u2019hui ?"))return;logsByDay[todayKey()]=[];persist();render()};
-render();setInterval(renderNow,1000);
+function sec(ms){return Math.round((ms||0)/1000)}
+function esc(s){return String(s||"").replace(/[;&]/g,",")}
+let db=load(),screen="lot",selRef="";
+if(!Array.isArray(db.refs))db.refs=[];
+if(!Array.isArray(db.lots))db.lots=[];
+function live(){
+  const c=db.current;if(!c)return{setup:0,prod:0,pause:0,phase:0,work:0};
+  const add=Date.now()-c.phaseStarted;
+  let setup=c.setupMs,prod=c.prodMs,pause=c.pauseMs,phase=add;
+  if(c.phase==="setup")setup+=add;
+  else if(c.phase==="prod")prod+=add;
+  else pause+=add;
+  return{setup,prod,pause,phase,work:setup+prod};
+}
+function closePhase(){
+  const c=db.current;if(!c)return;
+  const add=Date.now()-c.phaseStarted;
+  if(c.phase==="setup")c.setupMs+=add;
+  else if(c.phase==="prod")c.prodMs+=add;
+  else c.pauseMs+=add;
+  const last=c.segs[c.segs.length-1];if(last&&!last.end)last.end=Date.now();
+}
+function startPhase(kind){
+  const c=db.current;if(!c)return;
+  c.phase=kind;c.phaseStarted=Date.now();
+  c.segs.push({kind,start:Date.now()});
+}
+function ofExists(num,except){return db.lots.some(l=>l.of===num)||(db.current&&db.current.of===num&&db.current.of!==except)}
+function startLot(){
+  if(db.current){alert("Terminez d'abord le lot en cours.");return}
+  const of=($("ofIn").value||"").trim();
+  const ref=($("refIn").value||selRef||"").trim();
+  const qty=parseInt($("qtyIn").value,10);
+  if(!of){alert("Indiquez le numéro d'OF.");return}
+  if(!ref){alert("Indiquez la référence.");return}
+  if(!qty||qty<1){alert("Indiquez la quantité du lot.");return}
+  if(ofExists(of)){alert("Cet OF existe déjà. Chaque lancement a un numéro unique.");return}
+  if(!db.refs.includes(ref))db.refs.push(ref);
+  selRef=ref;
+  db.current={of,ref,qty,phase:"setup",phaseStarted:Date.now(),setupMs:0,prodMs:0,pauseMs:0,started:Date.now(),beforePause:"setup",segs:[{kind:"setup",start:Date.now()}]};
+  $("ofIn").value="";$("qtyIn").value="";
+  save();render();
+}
+function toProd(){
+  const c=db.current;if(!c)return;
+  if(c.phase==="prod")return;
+  if(c.phase==="pause"){alert("Reprendre d'abord (bouton Pause).");return}
+  closePhase();startPhase("prod");save();render();
+}
+function togglePause(){
+  const c=db.current;if(!c)return;
+  if(c.phase==="pause"){closePhase();startPhase(c.beforePause||"prod");}
+  else{c.beforePause=c.phase;closePhase();startPhase("pause")}
+  save();render();
+}
+function endLot(){
+  const c=db.current;if(!c)return;
+  if(!confirm("Terminer l'OF "+c.of+" ?"))return;
+  closePhase();
+  const lot={of:c.of,ref:c.ref,qty:c.qty,setupMs:c.setupMs,prodMs:c.prodMs,pauseMs:c.pauseMs,started:c.started,ended:Date.now(),date:ymd(c.started),segs:c.segs};
+  db.lots.push(lot);db.current=null;save();render();
+}
+function pieceTimes(l){
+  const work=l.setupMs+l.prodMs;
+  return{work,piece:l.qty?l.prodMs/l.qty:null,charge:l.qty?work/l.qty:null};
+}
+function renderNav(){
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.s===screen));
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id==="screen-"+screen));
+}
+function renderNow(){
+  $("clock").textContent=new Date().toLocaleString("fr-FR");
+  const c=db.current,ph=$("nowPhase"),sp=$("nowSplit"),run=$("runBox"),st=$("startBox");
+  if(!c){
+    $("nowTitle").textContent="\u2014 arr\u00eat\u00e9 \u2014";$("nowTime").textContent="00:00:00";$("nowMeta").textContent="";
+    ph.style.display="none";sp.style.display="none";run.style.display="none";st.style.display="block";
+    return;
+  }
+  const L=live();
+  $("nowTitle").textContent=c.ref+" \u00b7 OF "+c.of;
+  $("nowTime").textContent=fmt(L.phase);
+  $("nowMeta").textContent=c.qty+" pi\u00e8ce"+(c.qty>1?"s":"")+" \u00b7 d\u00e9but "+hm(c.started);
+  ph.style.display="inline-block";sp.style.display="grid";run.style.display="block";st.style.display="none";
+  ph.className="phase "+c.phase;
+  ph.textContent=c.phase==="setup"?"Mise en route":c.phase==="prod"?"Production":"Pause \u2014 le temps pi\u00e8ce est fig\u00e9";
+  $("kSetup").textContent=fmt(L.setup);$("kProd").textContent=fmt(L.prod);$("kPause").textContent=fmt(L.pause);$("kWork").textContent=fmt(L.work);
+  $("btnProd").style.display=c.phase==="prod"?"none":"";
+  $("btnPause").textContent=c.phase==="pause"?"Reprendre":"Pause / d\u00e9rangement";
+  $("runHint").textContent=c.phase==="setup"?"R\u00e9glez, puis passez en production.":c.phase==="prod"?"Les interruptions se notent avec Pause. Terminer le lot \u00e0 la derni\u00e8re pi\u00e8ce.":"Reprendre pour continuer le m\u00eame OF.";
+}
+function renderChips(){
+  const box=$("refChips");box.innerHTML="";
+  db.refs.forEach(r=>{
+    const b=document.createElement("button");b.className="chip"+(selRef===r?" on":"");b.textContent=r;
+    b.onclick=()=>{selRef=r;$("refIn").value=r;renderChips()};
+    box.appendChild(b);
+  });
+}
+function renderJournal(){
+  const box=$("journal");const lots=[...db.lots].sort((a,b)=>b.started-a.started);
+  if(db.current){
+    const L=live();
+    box.innerHTML="<div class='card'><div><b>En cours \u00b7 OF "+db.current.of+"</b></div><div class='hint'>"+db.current.ref+" \u00b7 "+db.current.qty+" p. \u00b7 mise en route "+fmt(L.setup)+" \u00b7 prod "+fmt(L.prod)+" \u00b7 pause "+fmt(L.pause)+"</div></div>";
+  }else box.innerHTML="";
+  if(!lots.length&&!db.current){box.innerHTML+="<p class='hint'>Aucun lot termin\u00e9.</p>";return}
+  lots.forEach(l=>{
+    const t=pieceTimes(l);
+    const div=document.createElement("div");div.className="card";
+    div.innerHTML="<div><b>OF "+l.of+"</b> \u00b7 "+l.ref+" \u00b7 "+l.qty+" p.</div><div class='hint'>"+l.date+" "+hm(l.started)+"\u2013"+hm(l.ended)+" \u00b7 route "+fmt(l.setupMs)+" \u00b7 prod "+fmt(l.prodMs)+" \u00b7 pause "+fmt(l.pauseMs)+"<br>Temps pi\u00e8ce "+(t.piece==null?"n/c":fmt(t.piece))+" \u00b7 charg\u00e9 "+(t.charge==null?"n/c":fmt(t.charge))+"</div>";
+    const del=document.createElement("button");del.className="btn sm";del.textContent="Supprimer";
+    del.onclick=()=>{if(!confirm("Supprimer l'OF "+l.of+" ?"))return;db.lots=db.lots.filter(x=>x!==l);save();render()};
+    div.appendChild(del);box.appendChild(div);
+  });
+}
+function renderRefs(){
+  const box=$("refList");box.innerHTML="";
+  if(!db.refs.length)box.innerHTML="<p class='hint'>Pas encore de r\u00e9f\u00e9rence.</p>";
+  db.refs.forEach((r,i)=>{
+    const n=db.lots.filter(l=>l.ref===r).length;
+    const card=document.createElement("div");card.className="card";
+    card.innerHTML="<div><b>"+r+"</b></div><div class='hint'>"+n+" lot"+(n>1?"s":"")+" point\u00e9"+(n>1?"s":"")+"</div>";
+    const b=document.createElement("button");b.className="btn sm";b.textContent="Retirer du catalogue";
+    b.onclick=()=>{if(db.current&&db.current.ref===r){alert("Cette r\u00e9f est en cours.");return}db.refs.splice(i,1);if(selRef===r)selRef="";save();render()};
+    card.appendChild(b);box.appendChild(card);
+  });
+}
+function renderAnalyse(){
+  const by={};
+  db.lots.forEach(l=>{
+    if(!by[l.ref])by[l.ref]={ref:l.ref,n:0,qty:0,setup:0,prod:0,pause:0};
+    const x=by[l.ref];x.n++;x.qty+=l.qty;x.setup+=l.setupMs;x.prod+=l.prodMs;x.pause+=l.pauseMs;
+  });
+  const box=$("analyse");box.innerHTML="";
+  const rows=Object.values(by).sort((a,b)=>a.ref.localeCompare(b.ref,"fr"));
+  if(!rows.length){box.innerHTML="<p class='hint'>Pas encore de stats. Terminez au moins un lot.</p>";return}
+  rows.forEach(x=>{
+    const piece=x.qty?x.prod/x.qty:null,charge=x.qty?(x.setup+x.prod)/x.qty:null;
+    const div=document.createElement("div");div.className="card";
+    div.innerHTML="<div><b>"+x.ref+"</b></div><div class='hint'>"+x.n+" OF \u00b7 "+x.qty+" pi\u00e8ces<br>Mise en route "+fmt(x.setup)+" \u00b7 prod "+fmt(x.prod)+" \u00b7 pauses "+fmt(x.pause)+"<br><b>Temps pi\u00e8ce "+(piece==null?"n/c":fmt(piece))+" \u00b7 charg\u00e9 "+(charge==null?"n/c":fmt(charge))+"</b></div>";
+    box.appendChild(div);
+  });
+}
+function render(){renderNav();renderChips();renderNow();renderJournal();renderRefs();renderAnalyse()}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{screen=b.dataset.s;render()});
+$("btnStart").onclick=startLot;
+$("btnProd").onclick=toProd;
+$("btnPause").onclick=togglePause;
+$("btnEnd").onclick=endLot;
+$("btnAddRef").onclick=()=>{const v=$("newRef").value.trim();if(!v)return;if(db.refs.includes(v)){alert("D\u00e9j\u00e0 dans le catalogue.");return}db.refs.push(v);$("newRef").value="";save();render()};
+$("newRef").addEventListener("keydown",e=>{if(e.key==="Enter")$("btnAddRef").click()});
+$("refIn").addEventListener("input",()=>{selRef=$("refIn").value.trim();renderChips()});
+$("btnCsv").onclick=()=>{
+  const lines=["\uFEFF","of;date;ref;qte;mise_en_route_sec;prod_sec;pause_sec;total_travail_sec;temps_piece_sec;temps_charge_sec;debut;fin"];
+  [...db.lots].sort((a,b)=>a.started-b.started).forEach(l=>{
+    const t=pieceTimes(l);
+    lines.push([esc(l.of),l.date,esc(l.ref),l.qty,sec(l.setupMs),sec(l.prodMs),sec(l.pauseMs),sec(t.work),t.piece==null?"":Math.round(t.piece/1000),t.charge==null?"":Math.round(t.charge/1000),new Date(l.started).toISOString(),new Date(l.ended).toISOString()].join(";"));
+  });
+  lines.push("","Segments","of;kind;debut;fin;duree_sec");
+  db.lots.forEach(l=>{(l.segs||[]).forEach(s=>{if(!s.end)return;lines.push([esc(l.of),s.kind,new Date(s.start).toISOString(),new Date(s.end).toISOString(),sec(s.end-s.start)].join(";"))})});
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}));a.download="pointeuse-of-"+ymd(new Date())+".csv";a.click();
+};
+$("btnBak").onclick=()=>{const pack={app:"pointeuse-of",version:1,saved:ymd(new Date()),data:db};const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(pack)],{type:"application/json"}));a.download="sauvegarde-pointeuse-"+ymd(new Date())+".json";a.click()};
+$("btnImp").onclick=()=>$("bakFile").click();
+$("bakFile").onchange=()=>{const f=$("bakFile").files[0];$("bakFile").value="";if(!f)return;const r=new FileReader();r.onload=()=>{try{const pack=JSON.parse(r.result);const data=pack.data||pack;if(!data||!Array.isArray(data.lots)){alert("Fichier illisible.");return}if(!confirm("Remplacer les donn\u00e9es actuelles ?"))return;db={refs:data.refs||[],lots:data.lots||[],current:data.current||null};save();alert("Sauvegarde restaur\u00e9e.");render()}catch(e){alert("Fichier illisible.")}};r.readAsText(f)};
+render();
+setInterval(renderNow,1000);
 </script></body></html>
