@@ -1,1 +1,181 @@
-SEE_FILE
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+<title>Pointeuse OF</title>
+<style>
+:root{--bg:#0e0f10;--panel:#17191b;--panel-2:#1e2124;--line:#2a2e32;--text:#e8e6e1;--muted:#9a958c;--gold:#c4a574;--gold-dim:#8a7349;--go:#2f6b4a;--warn:#b8893a;--stop:#8a4545;--tech:#3d5a80;--adm:#6b5b4f}
+*{box-sizing:border-box}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);margin:0}
+header{padding:12px 14px 8px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.clock{color:var(--muted);font-size:12px;margin-top:4px}
+nav{display:flex;flex-wrap:wrap;gap:5px;padding:8px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+nav button{flex:1 1 17%;min-width:58px;min-height:40px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;font-size:11px}nav button.on{border-color:var(--gold-dim);color:var(--gold)}
+main{max-width:560px;margin:0 auto;padding:12px}.screen{display:none}.screen.on{display:block}
+.now,.form,.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.lab{color:var(--muted);font-size:11px;text-transform:uppercase}
+.big{font-size:34px;font-weight:600;color:var(--gold);margin:4px 0}
+.meta,.hint{color:var(--muted);font-size:12px;line-height:1.45}
+.phase{display:inline-block;font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);margin-top:8px}
+.phase.setup{color:#d4c4a8;border-color:#8a7350;background:#2a2620}.phase.prod{color:#c5d9cc;border-color:#5a7a66;background:#222825}.phase.pause,#nowPhase.pause{color:#d4c4cc;border-color:#8a6a76;background:#2a2428}.phase.support{color:#c4ced8;border-color:#6a7a8a;background:#24282c}.phase.admin,#nowPhase.admin{color:#cfc8d6;border-color:#7a6e86;background:#28242c}
+.form input,.form select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;margin:6px 0 10px;color:var(--text);box-sizing:border-box}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{border:1px solid var(--line);background:var(--panel-2);color:var(--text);border-radius:99px;padding:8px 12px}
+.chip.on{border-color:var(--gold-dim);color:var(--gold)}
+.actions,.row-btns{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+button{font:inherit;color:var(--text)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px;min-height:48px}
+.btn.gold{border-color:#8a7349;color:#d4c4a8;background:#26221c}.btn.go{border-color:#5a7a66;color:#c5d9cc;background:#222825;flex:1}.btn.warn,.btn.pause,#btnPause{border-color:#8a6a76;color:#d4c4cc;background:#2a2428;flex:1}#btnAdmin,.btn.adm{border-color:#7a6e86;color:#cfc8d6;background:#28242c;flex:1}.btn.setup{border-color:#8a7350;color:#d4c4a8;background:#2a2620;flex:1}.btn.stop{border-color:#8a5a5a;color:#d4c4c4;background:#2a2222;flex:1}.btn.adj{border-color:#6a8a72;color:#c8d4cc;background:#222824;flex:1}.btn.full{width:100%}
+.btn.tech{border-color:#6a7a8a;color:#c4ced8;background:#24282c;flex:1}.btn.sm{min-height:42px;font-size:13px}
+.actions .btn{font-size:12px;line-height:1.2;padding:10px 6px}
+.row-end{display:flex;gap:8px;margin:12px 0}
+.row-end .btn{flex:1;font-size:12px;line-height:1.2;padding:10px 8px;margin-top:0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px;transition:background .2s,border-color .2s,color .2s}.kpi b{display:block;font-size:16px}
+.kpi.tap{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+.kpi.tap:active{transform:scale(.98)}
+.kpi.live.setup{color:#d4c4a8;border-color:#8a7350;background:#2a2620}
+.kpi.live.prod{color:#c5d9cc;border-color:#5a7a66;background:#222825}
+.kpi.live.pause{color:#d4c4cc;border-color:#8a6a76;background:#2a2428}
+.kpi.live.support{color:#c4ced8;border-color:#6a7a8a;background:#24282c}
+.kpi.live.admin{color:#cfc8d6;border-color:#7a6e86;background:#28242c}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;margin-right:4px}
+.tag.ok{background:#1a2e22;color:#cfe8d6}.tag.warn{background:#2a2316;color:#e6d3a8}.tag.bad{background:#2c1b1b;color:#e8c4c4}
+h2{font-size:12px;color:var(--muted);text-transform:uppercase}
+</style></head><body>
+<header><h1>Pointeuse OF</h1><div class="clock" id="clock"></div></header>
+<nav>
+<button class="on" data-s="lot">Lot</button><button data-s="journal">Journal</button><button data-s="refs">Réfs</button><button data-s="analyse">Analyse</button><button data-s="perso">Perso</button>
+</nav>
+<main>
+<section class="screen on" id="screen-lot">
+<div class="now">
+<div class="lab">En cours</div>
+<div id="nowTitle" style="font-size:20px;margin:4px 0">— arrêté —</div>
+<div class="big" id="nowTime">00:00:00</div>
+<div class="meta" id="nowMeta"></div>
+<div class="phase" id="nowPhase" style="display:none"></div>
+<div class="split" id="nowSplit" style="display:none">
+<div class="kpi tap" id="kpiSetup" data-phase="setup"><div class="lab">Mise en route</div><b id="kSetup">00:00:00</b></div>
+<div class="kpi tap" id="kpiProd" data-phase="prod"><div class="lab">Production</div><b id="kProd">00:00:00</b></div>
+<div class="kpi tap" id="kpiPause" data-phase="pause"><div class="lab">Pause</div><b id="kPause">00:00:00</b></div>
+<div class="kpi tap" id="kpiSupport" data-phase="support"><div class="lab">Support</div><b id="kSupport">00:00:00</b></div>
+<div class="kpi tap" id="kpiAdmin" data-phase="admin"><div class="lab">Admin</div><b id="kAdmin">00:00:00</b></div>
+<div class="kpi"><div class="lab">Total travail</div><b id="kWork">00:00:00</b></div>
+</div></div>
+<div id="startBox" class="form">
+<div class="lab">Numéro d'OF</div><input id="ofIn" inputmode="numeric" placeholder="Chiffres uniquement"/>
+<div class="lab">Référence pièce</div><div class="chips" id="refChips"></div>
+<input id="refIn" inputmode="numeric" placeholder="Réf en chiffres"/>
+<div class="lab">Quantité du lot</div><input id="qtyIn" type="number" min="1" inputmode="numeric" placeholder="Nombre de pièces"/>
+<div class="lab">TE — temps pièce cible (h)</div><input id="teIn" inputmode="decimal" placeholder="ex. 0,083"/>
+<div class="lab">TP — temps mise en route cible (h)</div><input id="tpIn" inputmode="decimal" placeholder="ex. 0,50"/>
+<button class="btn gold full" id="btnStart">Démarrer mise en route</button>
+<button class="btn go full" id="btnStartProd" style="margin-top:8px">Démarrer en production</button>
+</div>
+<div id="runBox" style="display:none">
+<div class="row-end">
+<button class="btn adj" id="btnAdjNow">Ajuster les temps</button>
+<button class="btn stop" id="btnEnd">Terminer le lot</button>
+</div>
+</div>
+<div id="adjBox" class="form" style="display:none">
+<div class="lab" id="adjTitle">Ajuster</div>
+<div class="lab">Mise en route</div><input id="adjSetup" inputmode="numeric"/>
+<div class="lab">Production</div><input id="adjProd" inputmode="numeric"/>
+<div class="lab">Pause</div><input id="adjPause" inputmode="numeric"/>
+<div class="lab">Support</div><input id="adjSupport" inputmode="numeric"/>
+<div class="lab">Admin</div><input id="adjAdmin" inputmode="numeric"/>
+<div class="actions"><button class="btn go" id="btnAdjPlus">+ Ajouter</button><button class="btn stop" id="btnAdjMinus">− Retirer</button></div>
+<button class="btn full" id="btnAdjCancel">Fermer</button>
+</div>
+</section>
+<section class="screen" id="screen-journal">
+<div class="actions"><button class="btn gold" id="btnCsv">Exporter CSV</button><button class="btn" id="btnBak">Sauvegarder JSON</button><button class="btn" id="btnImp">Importer</button></div>
+<input type="file" id="bakFile" accept="application/json,.json" style="display:none"/>
+<div id="journal"></div>
+</section>
+<section class="screen" id="screen-refs">
+<div class="form"><input id="newRef" inputmode="numeric" placeholder="Nouvelle réf"/><button class="btn gold full" id="btnAddRef">Ajouter la réf</button></div>
+<div id="refList"></div>
+</section>
+<section class="screen" id="screen-analyse">
+<p class="hint">TE = temps pièce. Cible prod = TE × quantité. TP = cible mise en route. Orange ≥ 15 %, rouge ≥ 25 %.</p>
+<div id="analyse"></div>
+</section>
+<section class="screen" id="screen-perso">
+<p class="hint">Perso. Base 40 h. Semaine lun–ven.</p>
+<div class="form">
+<div class="lab">Jour</div><select id="presDay"></select>
+<div class="lab">Présence (h)</div><input id="presIn" inputmode="decimal" placeholder="8 ou 8,25"/>
+<button class="btn gold full" id="btnPres">Valider la présence</button>
+<button class="btn full" id="btnConge" style="margin-top:8px">Marquer congé</button>
+</div>
+<div id="persoDay"></div><h2>Semaine</h2><div id="persoWeek"></div>
+</section>
+</main>
+<script>
+const KEY="ptz_of_v1";const $=id=>document.getElementById(id);
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{refs:[],lots:[],current:null,days:{}}}catch{return{refs:[],lots:[],current:null,days:{}}}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function ymd(d){const x=d instanceof Date?d:new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")}
+function fmt(ms){ms=Math.max(0,ms||0);const s=Math.floor(ms/1000);return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function hNum(ms){return ((ms||0)/3600000).toLocaleString("fr-FR",{minimumFractionDigits:3,maximumFractionDigits:3})}
+function msLabel(ms){if(ms==null)return"n/c";return fmt(ms)+" \u00b7 "+hNum(ms)+" h"}
+function hm(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
+function sec(ms){return Math.round((ms||0)/1000)}
+function parseMin(v){v=String(v||"").trim().replace(",",".");if(!v)return 0;const n=Number(v);return isFinite(n)?Math.round(n*60000):null}
+function parseH(v){v=String(v||"").trim().replace(",",".");if(!v)return 0;const n=Number(v);return isFinite(n)&&n>=0?Math.round(n*3600000):null}
+function onlyDigits(v){return String(v||"").replace(/\D/g,"")}
+function pct(real,ref){if(!ref)return null;return (real-ref)/ref}
+function pctTxt(p){if(p==null)return"n/c";return (p>=0?"+":"")+((p*100).toLocaleString("fr-FR",{maximumFractionDigits:0}))+" %"}
+function tagFor(p){if(p==null)return"";const a=Math.abs(p);if(a>=0.25)return"bad";if(a>=0.15)return"warn";return"ok"}
+function prodCible(l){return (l.teMs||0)*(l.qty||0)}
+function lastTargets(ref){const lots=db.lots.filter(l=>l.ref===ref&&(l.teMs||l.tpMs)).sort((a,b)=>b.started-a.started);if(!lots.length)return{te:0,tp:0};return{te:lots[0].teMs||0,tp:lots[0].tpMs||0}}
+function nets(o,a,b){const s=Math.max(0,(a!=null?a:o.setupMs||0)+(o.setupAdjMs||0));const p=Math.max(0,(b!=null?b:o.prodMs||0)+(o.prodAdjMs||0));return{setup:s,prod:p,work:s+p}}
+function offNets(o,L){return{pause:Math.max(0,(L?L.pause:o.pauseMs||0)+(o.pauseAdjMs||0)),support:Math.max(0,(L?L.support:o.supportMs||0)+(o.supportAdjMs||0)),admin:Math.max(0,(L?L.admin:o.adminMs||0)+(o.adminAdjMs||0))}}
+let db=load(),screen="lot",selRef="",adjOf=null;
+if(!Array.isArray(db.refs))db.refs=[];if(!Array.isArray(db.lots))db.lots=[];if(!db.days||typeof db.days!=="object")db.days={};
+function live(){const z={setup:0,prod:0,pause:0,support:0,admin:0,phase:0,nSetup:0,nProd:0,nWork:0};const c=db.current;if(!c)return z;const add=Date.now()-c.phaseStarted;let setup=c.setupMs||0,prod=c.prodMs||0,pause=c.pauseMs||0,support=c.supportMs||0,admin=c.adminMs||0;if(c.phase==="setup")setup+=add;else if(c.phase==="prod")prod+=add;else if(c.phase==="pause")pause+=add;else if(c.phase==="support")support+=add;else if(c.phase==="admin")admin+=add;const n=nets(c,setup,prod);return{setup,prod,pause,support,admin,phase:add,nSetup:n.setup,nProd:n.prod,nWork:n.work}}
+function closePhase(){const c=db.current;if(!c)return;const add=Date.now()-c.phaseStarted;if(c.phase==="setup")c.setupMs+=add;else if(c.phase==="prod")c.prodMs+=add;else if(c.phase==="pause")c.pauseMs=(c.pauseMs||0)+add;else if(c.phase==="support")c.supportMs=(c.supportMs||0)+add;else if(c.phase==="admin")c.adminMs=(c.adminMs||0)+add;const last=c.segs[c.segs.length-1];if(last&&!last.end)last.end=Date.now()}
+function startPhase(kind){const c=db.current;if(!c)return;c.phase=kind;c.phaseStarted=Date.now();c.segs.push({kind,start:Date.now()})}
+function ofExists(num){return db.lots.some(l=>l.of===num)||(db.current&&db.current.of===num)}
+function fillTargets(){const ref=onlyDigits($("refIn").value||selRef||"");if(!ref)return;const t=lastTargets(ref);if(t.te)$("teIn").value=hNum(t.te);if(t.tp)$("tpIn").value=hNum(t.tp)}
+function startLot(phase){if(db.current){alert("Terminez d'abord le lot en cours.");return}const of=onlyDigits($("ofIn").value),ref=onlyDigits($("refIn").value||selRef||""),qty=parseInt($("qtyIn").value,10),te=parseH($("teIn").value),tp=parseH($("tpIn").value);if(!of||!ref){alert("OF et réf en chiffres.");return}if(!qty||qty<1){alert("Quantité.");return}if(te==null||tp==null){alert("TE / TP invalides.");return}if(ofExists(of)){alert("OF déjà existant.");return}if(!db.refs.includes(ref))db.refs.push(ref);selRef=ref;const kind=phase==="prod"?"prod":"setup";db.current={of,ref,qty,teMs:te,tpMs:tp,phase:kind,phaseStarted:Date.now(),setupMs:0,prodMs:0,pauseMs:0,supportMs:0,adminMs:0,setupAdjMs:0,prodAdjMs:0,pauseAdjMs:0,supportAdjMs:0,adminAdjMs:0,started:Date.now(),segs:[{kind,start:Date.now()}]};$("ofIn").value="";$("qtyIn").value="";save();render()}
+function toPhase(kind){const c=db.current;if(!c||c.phase===kind)return;closePhase();startPhase(kind);save();render()}
+function endLot(){const c=db.current;if(!c)return;if(!confirm("Terminer l'OF "+c.of+" ?"))return;closePhase();db.lots.push({of:c.of,ref:c.ref,qty:c.qty,teMs:c.teMs||0,tpMs:c.tpMs||0,setupMs:c.setupMs,prodMs:c.prodMs,pauseMs:c.pauseMs||0,supportMs:c.supportMs||0,adminMs:c.adminMs||0,setupAdjMs:c.setupAdjMs||0,prodAdjMs:c.prodAdjMs||0,pauseAdjMs:c.pauseAdjMs||0,supportAdjMs:c.supportAdjMs||0,adminAdjMs:c.adminAdjMs||0,started:c.started,ended:Date.now(),date:ymd(c.started),segs:c.segs});db.current=null;adjOf=null;$("adjBox").style.display="none";save();render()}
+function pieceTimes(l){const n=nets(l);return{work:n.work,piece:l.qty?n.prod/l.qty:null,charge:l.qty?n.work/l.qty:null,n}}
+function openAdj(ofNum){adjOf=ofNum||(db.current&&db.current.of);if(!adjOf)return;$("adjTitle").textContent="Ajuster \u00b7 OF "+adjOf;["adjSetup","adjProd","adjPause","adjSupport","adjAdmin"].forEach(id=>$(id).value="");$("adjBox").style.display="block";screen="lot";render()}
+function applyAdj(sign){if(!adjOf)return;const keys=[["adjSetup","setupAdjMs"],["adjProd","prodAdjMs"],["adjPause","pauseAdjMs"],["adjSupport","supportAdjMs"],["adjAdmin","adminAdjMs"]];const vals=keys.map(k=>parseMin($(k[0]).value));if(vals.some(v=>v==null||v<0)||!vals.some(v=>v)){alert("Minutes invalides.");return}const o=db.current&&db.current.of===adjOf?db.current:db.lots.find(x=>x.of===adjOf);if(!o)return;keys.forEach((k,i)=>o[k[1]]=(o[k[1]]||0)+sign*vals[i]);save();render()}
+function mondayOf(d){const x=new Date(d);x.setHours(0,0,0,0);const day=x.getDay();x.setDate(x.getDate()+(day===0?-6:1-day));return x}
+function clip(a,b,c,d){const x=Math.max(a,c),y=Math.min(b,d);return y>x?y-x:0}
+function dayStats(day){const ds=new Date(day+"T00:00:00").getTime(),de=ds+86400000,out={setup:0,prod:0,pause:0,support:0,admin:0};const all=[...db.lots];if(db.current){all.push({...db.current,segs:(db.current.segs||[]).map(s=>s.end?s:{...s,end:Date.now()})})}all.forEach(l=>{(l.segs||[]).forEach(s=>{if(!s.start||!s.end)return;const add=clip(s.start,s.end,ds,de);if(out[s.kind]!=null)out[s.kind]+=add});if(ymd(l.started)===day){out.setup+=l.setupAdjMs||0;out.prod+=l.prodAdjMs||0;out.pause+=l.pauseAdjMs||0;out.support+=l.supportAdjMs||0;out.admin+=l.adminAdjMs||0}});const d=db.days[day]||{};out.work=Math.max(0,out.setup)+Math.max(0,out.prod);out.presence=d.conge?0:(d.presenceMs||0);out.conge=!!d.conge;return out}
+function weekDays(from){const m=mondayOf(from),arr=[];for(let i=0;i<5;i++){const x=new Date(m);x.setDate(m.getDate()+i);arr.push(ymd(x))}return arr}
+function workdayOptions(){const today=ymd(new Date()),out=[],start=mondayOf(new Date());start.setDate(start.getDate()-49);for(let w=0;w<10;w++)for(let i=0;i<5;i++){const x=new Date(start);x.setDate(start.getDate()+w*7+i);out.push(ymd(x))}return out.filter(d=>d<=today).reverse()}
+function renderNav(){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.s===screen));document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id==="screen-"+screen))}
+function phaseLabel(p){return {setup:"Mise en route",prod:"Production",pause:"Pause — hors prod",support:"Support technique — hors prod",admin:"Admin — hors prod"}[p]||p}
+function renderNow(){$("clock").textContent=new Date().toLocaleString("fr-FR");const c=db.current;if(!c){$("nowTitle").textContent="\u2014 arr\u00eat\u00e9 \u2014";$("nowTime").textContent="00:00:00";$("nowMeta").textContent="";$("nowPhase").style.display="none";$("nowSplit").style.display="none";$("runBox").style.display="none";$("startBox").style.display="block";["kpiSetup","kpiProd","kpiPause","kpiSupport","kpiAdmin"].forEach(id=>{const el=$(id);if(el)el.className="kpi tap"});return}const L=live(),cible=prodCible(c);$("nowTitle").textContent=c.ref+" \u00b7 OF "+c.of;$("nowTime").textContent=fmt(L.phase);$("nowMeta").textContent=c.qty+" p. \u00b7 TE "+hNum(c.teMs||0)+" h × "+c.qty+" = "+hNum(cible)+" h prod \u00b7 TP "+hNum(c.tpMs||0)+" h";$("nowPhase").style.display="inline-block";$("nowSplit").style.display="grid";$("runBox").style.display="block";$("startBox").style.display="none";$("nowPhase").className="phase "+c.phase;$("nowPhase").textContent=phaseLabel(c.phase);$("kSetup").textContent=fmt(L.nSetup);$("kProd").textContent=fmt(L.nProd);$("kPause").textContent=fmt(offNets(c,L).pause);$("kSupport").textContent=fmt(offNets(c,L).support);$("kAdmin").textContent=fmt(offNets(c,L).admin);$("kWork").textContent=fmt(L.nWork);const kpiMap={setup:"kpiSetup",prod:"kpiProd",pause:"kpiPause",support:"kpiSupport",admin:"kpiAdmin"};Object.keys(kpiMap).forEach(k=>{const el=$(kpiMap[k]);if(el)el.className="kpi tap"+(c.phase===k?" live "+k:"")})}
+function renderChips(){const box=$("refChips");box.innerHTML="";db.refs.forEach(r=>{const b=document.createElement("button");b.className="chip"+(selRef===r?" on":"");b.textContent=r;b.onclick=()=>{selRef=r;$("refIn").value=r;fillTargets();renderChips()};box.appendChild(b)})}
+function lotHint(l,t){const n=t.n,off=offNets(l),cible=prodCible(l);let s=l.date+" "+hm(l.started)+"\u2013"+hm(l.ended);s+="<br>TE "+hNum(l.teMs||0)+" h × "+l.qty+" = cible prod "+msLabel(cible);s+="<br>Prod réelle "+msLabel(n.prod)+(l.teMs?" \u00b7 vs cible prod "+pctTxt(pct(n.prod,cible)):"");s+="<br>TP "+msLabel(l.tpMs||0)+" \u00b7 route réelle "+msLabel(n.setup)+(l.tpMs?" \u00b7 vs TP "+pctTxt(pct(n.setup,l.tpMs)):"");s+="<br>Temps pièce "+msLabel(t.piece)+" \u00b7 chargé "+msLabel(t.charge);s+="<br>Pause "+fmt(off.pause)+" \u00b7 support "+fmt(off.support)+" \u00b7 admin "+fmt(off.admin);return s}
+function renderJournal(){const box=$("journal");const lots=[...db.lots].sort((a,b)=>b.started-a.started);box.innerHTML=db.current?"<div class='card'><b>En cours \u00b7 OF "+db.current.of+"</b></div>":"";if(!lots.length&&!db.current){box.innerHTML+="<p class='hint'>Aucun lot.</p>";return}lots.forEach(l=>{const t=pieceTimes(l),div=document.createElement("div");div.className="card";div.innerHTML="<div><b>OF "+l.of+"</b> \u00b7 "+l.ref+" \u00b7 "+l.qty+" p.</div><div class='hint'>"+lotHint(l,t)+"</div>";const te=document.createElement("input");te.placeholder="TE h";te.value=l.teMs?hNum(l.teMs):"";const tp=document.createElement("input");tp.placeholder="TP h";tp.value=l.tpMs?hNum(l.tpMs):"";const sav=document.createElement("button");sav.className="btn sm gold";sav.textContent="Sauver TE/TP";sav.onclick=()=>{const a=parseH(te.value),b=parseH(tp.value);if(a==null||b==null){alert("TE/TP invalides.");return}l.teMs=a;l.tpMs=b;save();render()};const row=document.createElement("div");row.className="row-btns";const del=document.createElement("button");del.className="btn sm";del.textContent="Supprimer";del.onclick=()=>{if(confirm("Supprimer l'OF "+l.of+" ?")){db.lots=db.lots.filter(x=>x!==l);save();render()}};row.append(sav,del);div.append(te,tp,row);box.appendChild(div)})}
+function renderRefs(){const box=$("refList");box.innerHTML=db.refs.length?"":"<p class='hint'>Pas encore de réf.</p>";db.refs.forEach((r,i)=>{const card=document.createElement("div");card.className="card";card.innerHTML="<b>"+r+"</b>";const b=document.createElement("button");b.className="btn sm";b.textContent="Retirer";b.onclick=()=>{db.refs.splice(i,1);save();render()};card.appendChild(b);box.appendChild(card)})}
+function renderAnalyse(){const by={};db.lots.forEach(l=>{if(!by[l.ref])by[l.ref]={ref:l.ref,lots:[]};by[l.ref].lots.push({l,t:pieceTimes(l)})});const box=$("analyse");box.innerHTML="";const rows=Object.values(by);if(!rows.length){box.innerHTML="<p class='hint'>Pas encore de stats.</p>";return}rows.forEach(x=>{const pieces=x.lots.map(o=>o.t.piece).filter(v=>v!=null).sort((a,b)=>a-b);const mid=pieces.length?pieces[Math.floor((pieces.length-1)/2)]:null;const qty=x.lots.reduce((s,o)=>s+o.l.qty,0),setupSum=x.lots.reduce((s,o)=>s+o.t.n.setup,0),prodSum=x.lots.reduce((s,o)=>s+o.t.n.prod,0),cibleProd=x.lots.reduce((s,o)=>s+prodCible(o.l),0),cibleRoute=x.lots.reduce((s,o)=>s+(o.l.tpMs||0),0);const div=document.createElement("div");div.className="card";let html="<div><b>"+x.ref+"</b></div><div class='hint'>"+x.lots.length+" OF \u00b7 "+qty+" p.<br>Médian pièce "+msLabel(mid)+"<br>Route réelle "+msLabel(setupSum)+" \u00b7 cible TP "+msLabel(cibleRoute)+" \u00b7 "+pctTxt(pct(setupSum,cibleRoute))+"<br>Prod réelle "+msLabel(prodSum)+" \u00b7 cible TE×qté "+msLabel(cibleProd)+" \u00b7 "+pctTxt(pct(prodSum,cibleProd))+"</div>";x.lots.forEach(o=>{const cible=prodCible(o.l),pProd=o.l.teMs?pct(o.t.n.prod,cible):null,pTp=o.l.tpMs?pct(o.t.n.setup,o.l.tpMs):null,pMed=o.t.piece!=null&&mid?pct(o.t.piece,mid):null;html+="<div class='hint' style='margin-top:8px'>OF "+o.l.of+" \u00b7 "+o.l.qty+" p.<br>Cible prod "+msLabel(cible)+" \u00b7 réel "+msLabel(o.t.n.prod)+(pProd!=null?" <span class='tag "+tagFor(pProd)+"'>vs TE×qté "+pctTxt(pProd)+"</span>":"")+(pMed!=null?" <span class='tag "+tagFor(pMed)+"'>vs médian "+pctTxt(pMed)+"</span>":"")+"<br>Cible route "+msLabel(o.l.tpMs||0)+" \u00b7 réel "+msLabel(o.t.n.setup)+(pTp!=null?" <span class='tag "+tagFor(pTp)+"'>vs TP "+pctTxt(pTp)+"</span>":"")+"</div>"});div.innerHTML=html;box.appendChild(div)})}
+function fillDaySelect(){const sel=$("presDay"),keep=sel.value,opts=workdayOptions();if(!sel.dataset.ready||sel.options.length!==opts.length){sel.innerHTML="";opts.forEach(d=>{const o=document.createElement("option");o.value=d;o.textContent=new Date(d+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"2-digit"});sel.appendChild(o)});sel.dataset.ready="1"}sel.value=keep&&opts.includes(keep)?keep:ymd(new Date())}
+function loadPresField(){const day=$("presDay").value||ymd(new Date()),rec=db.days[day];$("presIn").value=rec&&!rec.conge&&rec.presenceMs?hNum(rec.presenceMs):""}
+function renderPerso(){fillDaySelect();const day=$("presDay").value||ymd(new Date());if(document.activeElement!==$("presIn"))loadPresField();const d=dayStats(day),ratio=d.presence?d.work/d.presence:null,label=new Date(day+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"2-digit",month:"2-digit"});$("persoDay").innerHTML="<div class='card'><b>"+label+(d.conge?" \u00b7 congé":"")+"</b><div class='hint'>Travail "+msLabel(d.work)+"<br>Présence "+(d.conge?"congé":d.presence?msLabel(d.presence):"non saisie")+"<br><b>Productivité "+(d.conge?"congé":ratio==null?"—":(ratio*100).toLocaleString("fr-FR",{maximumFractionDigits:0})+" %")+"</b></div></div>";let wWork=0,wPres=0,wOff=0,lines="<div class='card'>";weekDays(new Date()).forEach(dd=>{const s=dayStats(dd);wWork+=s.work;wPres+=s.presence;if(s.conge)wOff++;const name=new Date(dd+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"2-digit"});lines+="<div class='hint'>"+name+" \u00b7 "+(s.conge?"congé":"travail "+fmt(s.work)+" \u00b7 présence "+(s.presence?fmt(s.presence):"—"))+"</div>"});const vsPres=wPres?wWork/wPres:null;lines+="<div class='hint'><b>Semaine lun–ven</b><br>Travail "+msLabel(wWork)+" \u00b7 présence "+msLabel(wPres)+(wOff?" \u00b7 "+wOff+" j. congé":"")+"<br>/ présence "+(vsPres==null?"—":(vsPres*100).toLocaleString("fr-FR",{maximumFractionDigits:0})+" %")+" \u00b7 / 40 h "+((wWork/(40*3600000))*100).toLocaleString("fr-FR",{maximumFractionDigits:0})+" %</div></div>";$("persoWeek").innerHTML=lines}
+function render(){renderNav();renderChips();renderNow();renderJournal();renderRefs();renderAnalyse();renderPerso()}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{screen=b.dataset.s;render()});
+$("btnStart").onclick=()=>startLot("setup");$("btnStartProd").onclick=()=>startLot("prod");
+document.querySelectorAll(".kpi.tap").forEach(el=>el.onclick=()=>{if(el.dataset.phase)toPhase(el.dataset.phase)});
+$("btnEnd").onclick=endLot;$("btnAdjNow").onclick=()=>openAdj(db.current&&db.current.of);$("btnAdjPlus").onclick=()=>applyAdj(1);$("btnAdjMinus").onclick=()=>applyAdj(-1);$("btnAdjCancel").onclick=()=>{$("adjBox").style.display="none"};
+["adjSetup","adjProd","adjPause","adjSupport","adjAdmin"].forEach(id=>$(id).addEventListener("input",()=>$(id).value=onlyDigits($(id).value)));
+$("btnAddRef").onclick=()=>{const v=onlyDigits($("newRef").value);if(v&&!db.refs.includes(v)){db.refs.push(v);$("newRef").value="";save();render()}};
+["ofIn","refIn","newRef"].forEach(id=>$(id).addEventListener("input",()=>{$(id).value=onlyDigits($(id).value);if(id==="refIn"){selRef=$("refIn").value;fillTargets();renderChips()}}));
+$("presDay").onchange=()=>loadPresField();
+$("btnPres").onclick=()=>{const ms=parseH($("presIn").value);if(ms==null){alert("Heures invalides.");return}const day=$("presDay").value||ymd(new Date());if(!db.days[day])db.days[day]={};db.days[day].presenceMs=ms;db.days[day].conge=false;save();render()};
+$("btnConge").onclick=()=>{const day=$("presDay").value||ymd(new Date());if(!db.days[day])db.days[day]={};db.days[day].conge=true;db.days[day].presenceMs=0;save();render()};
+$("btnCsv").onclick=()=>{const lines=["\uFEFF","of;date;ref;qte;te_h;tp_h;cible_prod_h;route_net_sec;prod_net_sec;ecart_te_pct;ecart_tp_pct"];db.lots.forEach(l=>{const t=pieceTimes(l);const eTe=t.piece!=null&&l.teMs?((t.piece-l.teMs)/l.teMs*100).toFixed(1).replace(".",","):"";const eTp=l.tpMs?((t.n.setup-l.tpMs)/l.tpMs*100).toFixed(1).replace(".",","):"";lines.push([l.of,l.date,l.ref,l.qty,hNum(l.teMs||0),hNum(l.tpMs||0),hNum(prodCible(l)),sec(t.n.setup),sec(t.n.prod),eTe,eTp].join(";"))});const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([lines.join("\n")],{type:"text/csv"}));a.download="pointeuse.csv";a.click()};
+$("btnBak").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({app:"pointeuse-of",version:2,data:db})]));a.download="sauvegarde-pointeuse.json";a.click()};
+$("btnImp").onclick=()=>$("bakFile").click();
+$("bakFile").onchange=()=>{const f=$("bakFile").files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const pack=JSON.parse(r.result),data=pack.data||pack;if(!confirm("Remplacer les données ?"))return;db={refs:data.refs||[],lots:data.lots||[],current:data.current||null,days:data.days||{}};save();render()}catch(e){alert("Fichier illisible.")}};r.readAsText(f)};
+render();setInterval(renderNow,1000);
+</script></body></html>
