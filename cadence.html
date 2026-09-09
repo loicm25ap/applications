@@ -30,6 +30,10 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 .kpi{background:#15181b;border:1px solid var(--line);border-radius:10px;padding:8px}
 .kpi b{display:block;font-size:16px}
 .hint{color:var(--muted);font-size:12px;line-height:1.4}
+.gap{margin-top:8px;padding:10px;border-radius:10px;border:1px solid var(--line);font-size:15px;font-weight:600}
+.gap.ok{background:#1a2a20;border-color:#3d8a5c;color:#c8e8d4}
+.gap.late{background:#2a1c1c;border-color:#8a5058;color:#e8c4c4}
+.gap.mid{background:#222018;border-color:#8a7349;color:#e4d4b0}
 .actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .btn{flex:1;min-height:44px;border:1px solid var(--line);border-radius:10px;background:#17191b;color:var(--text);font-size:12px}
 .btn.plus{flex:1 1 100%;min-height:56px;font-size:18px;background:#1a3d2c;border-color:#3d8a5c;color:#d0f0dc}
@@ -40,7 +44,6 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 .phase{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;margin:6px 0}
 .phase.prod{background:#1a3d2c;border:1px solid #3d8a5c;color:#d0f0dc}
 .phase.pause{background:#3a2428;border:1px solid #8a5058;color:#e0c4c4}
-.ok{color:#a8d4b8}.late{color:#e0a0a0}
 .slot{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
 .slot.on{display:block}
 </style></head><body>
@@ -88,6 +91,7 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 <div class="kpi"><div class="lab">Restantes</div><b id="kLeft">—</b></div>
 <div class="kpi"><div class="lab">Fin estimée</div><b id="kEta">—</b></div>
 </div>
+<div id="gapBox" class="gap mid">Note l'heure de départ</div>
 <div class="hint" id="proj" style="margin-top:8px"></div>
 <button class="btn plus" id="btnPiece" type="button">+1 pièce</button>
 <div class="actions">
@@ -118,6 +122,7 @@ function parseClock(v){v=String(v||"").trim().toLowerCase().replace("h",":");con
 function fmt(ms){ms=Math.max(0,ms||0);const s=Math.floor(ms/1000);return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor((s%3600)/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
 function hNum(ms){return ((ms||0)/3600000).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function hm(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
+function durTxt(ms){ms=Math.abs(ms||0);const m=Math.round(ms/60000);if(m<60)return m+" min";const h=Math.floor(m/60),mm=m%60;return h+" h"+(mm?" "+String(mm).padStart(2,"0"):"")}
 function S(){return db.series[db.active]}
 function liveProd(){const s=S();let t=s.prodMs||0;if(s.phase==="prod"&&s.phaseStarted&&!db.halted)t+=Date.now()-s.phaseStarted;return t}
 function livePause(){const s=S();let t=s.pauseMs||0;if(s.phase==="pause"&&s.phaseStarted&&!db.halted)t+=Date.now()-s.phaseStarted;return t}
@@ -137,7 +142,7 @@ function haltDay(){Object.keys(db.series).forEach(k=>closePhase(db.series[k]));d
 function resumeDay(){const s=S();db.halted=false;if(s.qty&&!s.ended){s.phase="prod";s.phaseStarted=Date.now()}save();paint()}
 function projection(){const pl=plannedSplit();if(!pl.all)return"";return "Pauses prévues "+Math.round(pl.all/60000)+" min · déjà "+Math.round(pl.done/60000)+" · à venir "+Math.round(pl.todo/60000)}
 function paint(){const s=S();const running=s.qty&&!s.ended&&!s.recap;const st=running&&!db.halted&&s.phase==="pause"?"pause":(running&&!db.halted?"prod":"");document.body.className="theme-"+db.active.toLowerCase()+(st?" st-"+st:"");document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.p===db.active));$("pieceLab").textContent="Série Pièce "+db.active;$("setupCard").style.display=running||s.recap?"none":"block";$("runCard").style.display=running?"block":"none";$("recapCard").style.display=s.recap?"block":"none";$("btnHalt").style.display=running&&!db.halted?"":"none";$("btnResume").style.display=running&&db.halted?"":"none";["slotLunch","slotP2","slotP3"].forEach(id=>$(id).classList.toggle("on",db.openSlot===id));tick();if(s.recap){const r=s.recap;const real=r.real?hNum(r.real)+" h/p":"n/c";const vs=r.real&&r.te?((r.real-r.te)/r.te*100):null;$("recap").innerHTML=r.done+" / "+r.qty+" pièces<br>Temps pièce "+fmt(r.prod)+" · réel "+real+(vs==null?"":" · "+(vs>=0?"+":"")+Math.round(vs)+" %")+"<br>Pauses "+fmt(r.pause)}}
-function tick(){$("clock").textContent=new Date().toLocaleString("fr-FR");const s=S();if(!(s.qty&&!s.ended&&!s.recap))return;$("nowTime").textContent=fmt(liveProd());$("nowPhase").className="phase "+(db.halted?"pause":(s.phase||"prod"));$("nowPhase").textContent=db.halted?"Arrêt journée":(s.phase==="pause"?"Pause":"Production");$("nowMeta").textContent=s.done+" / "+s.qty+" · TE "+hNum(s.teMs)+" h · TP "+hNum(s.tpMs)+" h";$("kPauseLive").textContent=fmt(pauseLiveOnly());$("kPauseDay").textContent=Math.round(livePause()/60000)+" min";$("kDone").textContent=s.done;$("kLeft").textContent=Math.max(0,s.qty-s.done);const pace=s.done>=1?liveProd()/s.done:s.teMs;const dep=parseClock(db.dep);const eta=Date.now()+Math.max(0,s.qty-s.done)*pace+plannedSplit().todo;$("kEta").textContent=hm(eta);let extra=projection();if(dep){const over=eta-dep;extra+=(extra?"<br>":"")+(over>5*60000?"<span class='late'>Dépassement départ : "+Math.round(over/60000)+" min</span>":"<span class='ok'>Dans l'horaire</span>")}$("proj").innerHTML=extra}
+function tick(){$("clock").textContent=new Date().toLocaleString("fr-FR");const s=S();if(!(s.qty&&!s.ended&&!s.recap))return;$("nowTime").textContent=fmt(liveProd());$("nowPhase").className="phase "+(db.halted?"pause":(s.phase||"prod"));$("nowPhase").textContent=db.halted?"Arrêt journée":(s.phase==="pause"?"Pause":"Production");$("nowMeta").textContent=s.done+" / "+s.qty+" · TE "+hNum(s.teMs)+" h · TP "+hNum(s.tpMs)+" h";$("kPauseLive").textContent=fmt(pauseLiveOnly());$("kPauseDay").textContent=Math.round(livePause()/60000)+" min";$("kDone").textContent=s.done;$("kLeft").textContent=Math.max(0,s.qty-s.done);const pace=s.done>=1?liveProd()/s.done:s.teMs;const dep=parseClock(db.dep);const eta=Date.now()+Math.max(0,s.qty-s.done)*pace+plannedSplit().todo;$("kEta").textContent=hm(eta);const box=$("gapBox");if(!dep){box.className="gap mid";box.textContent="Note l'heure de départ pour voir l'avance ou le retard"}else{const over=eta-dep;if(over>5*60000){box.className="gap late";box.textContent="En retard de "+durTxt(over)+" · fin "+hm(eta)+" / départ "+hm(dep)}else if(over<-5*60000){box.className="gap ok";box.textContent="En avance de "+durTxt(-over)+" · fin "+hm(eta)+" / départ "+hm(dep)}else{box.className="gap ok";box.textContent="À l'heure · fin "+hm(eta)+" / départ "+hm(dep)}}$("proj").innerHTML=projection()}
 function toggleSlot(id){db.openSlot=db.openSlot===id?null:id;paint()}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPiece(b.dataset.p));
 ["arrIn","depIn"].forEach(id=>$(id).addEventListener("input",()=>{db.arr=$("arrIn").value;db.dep=$("depIn").value;save()}));
