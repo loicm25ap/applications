@@ -15,30 +15,34 @@ h1{margin:0;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:va
 .tab.on.b{background:#1a3d2c;border-color:#3d8a5c;color:#d0f0dc}
 .tab.on.c{background:#3d3420;border-color:#b08a3a;color:#f4e6c4}
 body.theme-a{background:#152028}body.theme-b{background:#15241c}body.theme-c{background:#241c14}
+body.st-prod.theme-a{background:#163044}body.st-prod.theme-b{background:#163c28}body.st-prod.theme-c{background:#3c3018}
+body.st-pause{background:#3a2430}
 main{max-width:560px;margin:0 auto;padding:10px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
+body.st-prod .card{border-color:#3d8a5c}body.st-pause .card{border-color:#8a4a68}
 .lab{color:var(--muted);font-size:11px;text-transform:uppercase}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--text);font-size:16px;margin-top:3px}
 .big{font-size:28px;font-weight:600;color:var(--gold);margin:4px 0}
+.smtime{font-size:18px;font-weight:600;color:#d4b0bc}
 .kpi{background:#15181b;border:1px solid var(--line);border-radius:10px;padding:8px}
 .kpi b{display:block;font-size:16px}
 .hint{color:var(--muted);font-size:12px;line-height:1.4}
 .actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .btn{flex:1;min-height:44px;border:1px solid var(--line);border-radius:10px;background:#17191b;color:var(--text);font-size:12px}
 .btn.plus{flex:1 1 100%;min-height:56px;font-size:18px;background:#1a3d2c;border-color:#3d8a5c;color:#d0f0dc}
-.btn.setup{background:#3a3224;border-color:#8a7349}
 .btn.prod{background:#1a3d2c;border-color:#3d8a5c}
 .btn.pause{background:#3a2430;border-color:#8a4a68}
-.btn.admin{background:#2e243a;border-color:#6a4a8a}
-.btn.tech{background:#24303a;border-color:#4a6a8a}
-.btn.spir{background:#2a3038;border-color:#5a6878}
 .btn.stop{background:#3a2424;border-color:#8a4a4a}
 .btn.gold{border-color:#8a7349;color:#e4d4b0;background:#2a241c}
-.phase{display:inline-block;padding:3px 8px;border-radius:99px;border:1px solid var(--line);font-size:11px;margin:6px 0}
+.phase{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;margin:6px 0}
+.phase.prod{background:#1a3d2c;border:1px solid #3d8a5c;color:#d0f0dc}
+.phase.pause{background:#3a2430;border:1px solid #8a4a68;color:#f0d0dc}
 .ok{color:#a8d4b8}.late{color:#e0a0a0}
-.hist{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+.hist{font-size:12px;color:var(--muted)}
+.slot{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.slot.on{display:block}
 </style></head><body>
 <header><h1>Cadence</h1><div class="clock" id="clock"></div></header>
 <div class="tabs">
@@ -52,10 +56,14 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 <div><div class="lab">Arrivée</div><input id="arrIn" placeholder="7h40" autocomplete="off"/></div>
 <div><div class="lab">Départ prévu</div><input id="depIn" placeholder="17h00" autocomplete="off"/></div>
 </div>
-<div class="row">
-<div><div class="lab">Pause midi (min)</div><input id="p1In" inputmode="numeric" autocomplete="off"/></div>
-<div><div class="lab">Pause extra (min)</div><input id="p2In" inputmode="numeric" autocomplete="off"/></div>
+<div class="actions">
+<button class="btn pause" id="btnLunch" type="button">Pause déjeuner</button>
+<button class="btn pause" id="btnP2" type="button">Petite pause 1</button>
+<button class="btn pause" id="btnP3" type="button">Petite pause 2</button>
 </div>
+<div class="slot" id="slotLunch"><div class="lab">Déjeuner — début / fin</div><div class="row"><input id="l1" placeholder="12h00"/><input id="l2" placeholder="12h30"/></div></div>
+<div class="slot" id="slotP2"><div class="lab">Petite pause 1 — début / fin</div><div class="row"><input id="s1" placeholder="10h00"/><input id="s2" placeholder="10h15"/></div></div>
+<div class="slot" id="slotP3"><div class="lab">Petite pause 2 — début / fin</div><div class="row"><input id="t1" placeholder="15h00"/><input id="t2" placeholder="15h10"/></div></div>
 </div>
 <div class="card" id="setupCard">
 <div class="lab" id="pieceLab">Série Pièce A</div>
@@ -64,13 +72,17 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 <div><div class="lab">TP h</div><input id="tpIn" placeholder="0,5" autocomplete="off"/></div>
 <div><div class="lab">Pièces</div><input id="qtyIn" inputmode="numeric" placeholder="10" autocomplete="off"/></div>
 </div>
-<button class="btn gold" id="btnStart" type="button" style="width:100%;margin-top:8px">Démarrer mise en route</button>
+<button class="btn gold" id="btnStart" type="button" style="width:100%;margin-top:8px">Démarrer</button>
 </div>
 <div id="runCard" class="card" style="display:none">
-<div class="lab">Chrono</div>
+<div class="lab">Temps sur la pièce</div>
 <div class="big" id="nowTime">00:00:00</div>
-<div class="phase" id="nowPhase">—</div>
+<div class="phase prod" id="nowPhase">Production</div>
 <div class="hint" id="nowMeta"></div>
+<div class="row" style="margin-top:8px">
+<div class="kpi"><div class="lab">Pause en cours</div><b class="smtime" id="kPauseLive">00:00:00</b></div>
+<div class="kpi"><div class="lab">Pauses du jour</div><b id="kPauseDay">0 min</b></div>
+</div>
 <div class="row3" style="margin-top:8px">
 <div class="kpi"><div class="lab">Faites</div><b id="kDone">0</b></div>
 <div class="kpi"><div class="lab">Restantes</div><b id="kLeft">—</b></div>
@@ -79,12 +91,8 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 <div class="hint" id="proj" style="margin-top:8px"></div>
 <button class="btn plus" id="btnPiece" type="button">+1 pièce</button>
 <div class="actions">
-<button class="btn setup" data-ph="setup" type="button">Mise en route</button>
-<button class="btn prod" data-ph="prod" type="button">Production</button>
-<button class="btn pause" data-ph="pause" type="button">Pause</button>
-<button class="btn admin" data-ph="admin" type="button">Admin</button>
-<button class="btn tech" data-ph="support" type="button">Support</button>
-<button class="btn spir" data-ph="spirale" type="button">Spirale</button>
+<button class="btn prod" id="btnProd" type="button">Production</button>
+<button class="btn pause" id="btnPause" type="button">Pause</button>
 </div>
 <div class="actions">
 <button class="btn gold" id="btnEnd" type="button">Terminer la série</button>
@@ -102,9 +110,8 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 <script>
 const KEY="cadence_v1";
 const $=id=>document.getElementById(id);
-const LABELS={setup:"Mise en route",prod:"Production",pause:"Pause",admin:"Admin",support:"Support",spirale:"Spirale",stop:"Arrêt"};
-function emptySeries(){return{teMs:0,tpMs:0,qty:0,done:0,phase:null,phaseStarted:0,ms:{setup:0,prod:0,pause:0,admin:0,support:0,spirale:0},started:0,ended:0,recap:null,draft:{te:"",tp:"",qty:""}}}
-function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.series){["A","B","C"].forEach(k=>{if(!x.series[k].draft)x.series[k].draft={te:"",tp:"",qty:""}});return x}}catch(e){}return{active:"A",arr:"7h40",dep:"17h00",p1:30,p2:15,halted:false,series:{A:emptySeries(),B:emptySeries(),C:emptySeries()},hist:[]}}
+function emptySeries(){return{teMs:0,tpMs:0,qty:0,done:0,phase:null,phaseStarted:0,prodMs:0,pauseMs:0,started:0,ended:0,recap:null,draft:{te:"",tp:"",qty:""}}}
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.series){["A","B","C"].forEach(k=>{const s=x.series[k];if(!s.draft)s.draft={te:"",tp:"",qty:""};if(s.prodMs==null)s.prodMs=0;if(s.pauseMs==null)s.pauseMs=0});if(!x.slots)x.slots={l1:"12h00",l2:"12h30",s1:"",s2:"",t1:"",t2:""};return x}}catch(e){}return{active:"A",arr:"7h40",dep:"17h00",halted:false,slots:{l1:"12h00",l2:"12h30",s1:"",s2:"",t1:"",t2:""},openSlot:null,series:{A:emptySeries(),B:emptySeries(),C:emptySeries()},hist:[]}}
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 let db=load();
 function parseH(v){v=String(v||"").trim().toLowerCase().replace(",",".");if(!v)return null;const hm=v.match(/^(\d+)\s*h\s*(\d+)?$/);if(hm)return ((+hm[1])+((+hm[2]||0)/60))*3600000;const n=Number(v);return isFinite(n)&&n>=0?n*3600000:null}
@@ -113,26 +120,34 @@ function fmt(ms){ms=Math.max(0,ms||0);const s=Math.floor(ms/1000);return String(
 function hNum(ms){return ((ms||0)/3600000).toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function hm(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
 function S(){return db.series[db.active]}
-function liveMs(kind){const s=S();let t=s.ms[kind]||0;if(s.phase===kind&&s.phaseStarted&&!db.halted)t+=Date.now()-s.phaseStarted;return t}
-function closePhase(s){if(!s.phase||s.phase==="stop"||!s.phaseStarted)return;s.ms[s.phase]=(s.ms[s.phase]||0)+(Date.now()-s.phaseStarted);s.phaseStarted=0}
-function fillDraft(){const s=S();$("teIn").value=s.draft.te||"";$("tpIn").value=s.draft.tp||"";$("qtyIn").value=s.draft.qty||"";$("arrIn").value=db.arr;$("depIn").value=db.dep;$("p1In").value=db.p1;$("p2In").value=db.p2}
+function liveProd(){const s=S();let t=s.prodMs||0;if(s.phase==="prod"&&s.phaseStarted&&!db.halted)t+=Date.now()-s.phaseStarted;return t}
+function livePause(){const s=S();let t=s.pauseMs||0;if(s.phase==="pause"&&s.phaseStarted&&!db.halted)t+=Date.now()-s.phaseStarted;return t}
+function pauseLiveOnly(){const s=S();return (s.phase==="pause"&&s.phaseStarted&&!db.halted)?Date.now()-s.phaseStarted:0}
+function closePhase(s){if(!s.phase||s.phase==="stop"||!s.phaseStarted)return;if(s.phase==="prod")s.prodMs=(s.prodMs||0)+Date.now()-s.phaseStarted;if(s.phase==="pause")s.pauseMs=(s.pauseMs||0)+Date.now()-s.phaseStarted;s.phaseStarted=0}
+function slotMs(a,b){const x=parseClock(a),y=parseClock(b);if(x==null||y==null||y<=x)return 0;return y-x}
+function planned(){const sl=db.slots;return[{n:"déjeuner",a:sl.l1,b:sl.l2},{n:"pause 1",a:sl.s1,b:sl.s2},{n:"pause 2",a:sl.t1,b:sl.t2}].map(p=>({...p,ms:slotMs(p.a,p.b),start:parseClock(p.a),end:parseClock(p.b)})).filter(p=>p.ms)}
+function plannedSplit(){const now=Date.now();let done=0,todo=0;planned().forEach(p=>{if(p.end<=now)done+=p.ms;else if(p.start>=now)todo+=p.ms;else{done+=now-p.start;todo+=p.end-now}});return{done,todo,all:done+todo}}
+function fillDraft(){const s=S();$("teIn").value=s.draft.te||"";$("tpIn").value=s.draft.tp||"";$("qtyIn").value=s.draft.qty||"";$("arrIn").value=db.arr;$("depIn").value=db.dep;$("l1").value=db.slots.l1||"";$("l2").value=db.slots.l2||"";$("s1").value=db.slots.s1||"";$("s2").value=db.slots.s2||"";$("t1").value=db.slots.t1||"";$("t2").value=db.slots.t2||""}
 function startPhase(kind){const s=S();if(db.halted)db.halted=false;if(s.phase===kind&&s.phaseStarted)return;closePhase(s);s.phase=kind;s.phaseStarted=Date.now();save();paint()}
 function switchPiece(p){if(p===db.active)return;closePhase(S());db.active=p;save();paint();fillDraft()}
-function startSeries(){const s=S();const te=parseH($("teIn").value),tp=parseH($("tpIn").value),qty=parseInt($("qtyIn").value,10);if(te==null||tp==null||!qty){alert("TE, TP et nombre de pièces.");return}s.draft={te:$("teIn").value,tp:$("tpIn").value,qty:$("qtyIn").value};s.teMs=te;s.tpMs=tp;s.qty=qty;s.done=0;s.ms={setup:0,prod:0,pause:0,admin:0,support:0,spirale:0};s.started=Date.now();s.ended=0;s.recap=null;s.phase="setup";s.phaseStarted=Date.now();db.halted=false;save();paint()}
-function addPiece(){const s=S();if(!s.qty||s.ended)return;if(db.halted){db.halted=false;if(!s.phaseStarted){s.phase="prod";s.phaseStarted=Date.now()}}if(s.phase!=="prod")startPhase("prod");s.done=Math.min(s.qty,s.done+1);save();paint()}
-function endSeries(){const s=S();if(!s.qty||s.ended)return;if(!confirm("Terminer la série "+db.active+" ?"))return;closePhase(s);s.ended=Date.now();s.phase="stop";const prod=s.ms.prod||0,real=s.done?prod/s.done:null;s.recap={done:s.done,qty:s.qty,setup:s.ms.setup,prod,pause:s.ms.pause,admin:s.ms.admin,support:s.ms.support,spirale:s.ms.spirale,te:s.teMs,tp:s.tpMs,real};db.hist.unshift({piece:db.active,when:Date.now(),...s.recap});if(db.hist.length>20)db.hist.pop();save();paint()}
+function startSeries(){const s=S();const te=parseH($("teIn").value),tp=parseH($("tpIn").value),qty=parseInt($("qtyIn").value,10);if(te==null||tp==null||!qty){alert("TE, TP et nombre de pièces.");return}s.draft={te:$("teIn").value,tp:$("tpIn").value,qty:$("qtyIn").value};s.teMs=te;s.tpMs=tp;s.qty=qty;s.done=0;s.prodMs=0;s.pauseMs=0;s.started=Date.now();s.ended=0;s.recap=null;s.phase="prod";s.phaseStarted=Date.now();db.halted=false;save();paint()}
+function addPiece(){const s=S();if(!s.qty||s.ended)return;if(db.halted){db.halted=false;s.phase="prod";s.phaseStarted=Date.now()}if(s.phase!=="prod")startPhase("prod");s.done=Math.min(s.qty,s.done+1);save();paint()}
+function endSeries(){const s=S();if(!s.qty||s.ended)return;if(!confirm("Terminer la série "+db.active+" ?"))return;closePhase(s);s.ended=Date.now();s.phase="stop";const real=s.done?s.prodMs/s.done:null;s.recap={done:s.done,qty:s.qty,prod:s.prodMs,pause:s.pauseMs,te:s.teMs,tp:s.tpMs,real};db.hist.unshift({piece:db.active,when:Date.now(),...s.recap});if(db.hist.length>20)db.hist.pop();save();paint()}
 function newSeries(){const keep=S().draft;db.series[db.active]=emptySeries();db.series[db.active].draft=keep||{te:"",tp:"",qty:""};save();paint();fillDraft()}
 function haltDay(){Object.keys(db.series).forEach(k=>closePhase(db.series[k]));db.halted=true;save();paint()}
-function resumeDay(){const s=S();db.halted=false;if(s.qty&&!s.ended){s.phase=s.phase&&s.phase!=="stop"?s.phase:"prod";s.phaseStarted=Date.now()}save();paint()}
-function projection(){const s=S();if(!s.qty)return"";const left=Math.max(0,s.qty-s.done);const pace=s.done>=1?(liveMs("prod")/s.done):s.teMs;const need=left*pace;const eta=Date.now()+need;const dep=parseClock(db.dep);const p1=(+db.p1||0)*60000,p2=(+db.p2||0)*60000;let msg="Fin de série estimée <b>"+hm(eta)+"</b>";if(dep){const over=eta-dep;if(over>5*60000)msg+="<br><span class='late'>Dépassement départ : "+Math.round(over/60000)+" min</span>";else msg+="<br><span class='ok'>Dans l'horaire</span>";const usedOff=liveMs("pause")+liveMs("admin")+liveMs("support")+liveMs("spirale");const slack=dep-Date.now()-need-Math.max(0,p1+p2-usedOff);if(slack>0)msg+="<br>Jeu restant ~ "+Math.round(slack/60000)+" min"}
+function resumeDay(){const s=S();db.halted=false;if(s.qty&&!s.ended){s.phase="prod";s.phaseStarted=Date.now()}save();paint()}
+function projection(){const s=S();if(!s.qty)return"";const left=Math.max(0,s.qty-s.done);const pace=s.done>=1?(liveProd()/s.done):s.teMs;const need=left*pace;const pl=plannedSplit();const eta=Date.now()+need+pl.todo;const dep=parseClock(db.dep);let msg="Fin de série estimée <b>"+hm(eta)+"</b>";if(pl.all)msg+="<br>Pauses prévues "+Math.round(pl.all/60000)+" min · déjà "+Math.round(pl.done/60000)+" · à venir "+Math.round(pl.todo/60000);if(dep){const over=eta-dep;if(over>5*60000)msg+="<br><span class='late'>Dépassement départ : "+Math.round(over/60000)+" min</span>";else msg+="<br><span class='ok'>Dans l'horaire</span>"}
 return msg}
-function paint(){document.body.className="theme-"+db.active.toLowerCase();document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.p===db.active));$("pieceLab").textContent="Série Pièce "+db.active;const s=S();const running=s.qty&&!s.ended&&!s.recap;$("setupCard").style.display=running||s.recap?"none":"block";$("runCard").style.display=running?"block":"none";$("recapCard").style.display=s.recap?"block":"none";$("btnHalt").style.display=running&&!db.halted?"":"none";$("btnResume").style.display=running&&db.halted?"":"none";tick();if(s.recap){const r=s.recap;const real=r.real?hNum(r.real)+" h/p":"n/c";const vs=r.real&&r.te?((r.real-r.te)/r.te*100):null;$("recap").innerHTML=r.done+" / "+r.qty+" pièces<br>Route "+fmt(r.setup)+" (cible "+hNum(r.tp)+" h)<br>Prod "+fmt(r.prod)+" · réel "+real+(vs==null?"":" · "+(vs>=0?"+":"")+Math.round(vs)+" %")+"<br>Pause "+fmt(r.pause)+" · admin "+fmt(r.admin)+" · support "+fmt(r.support)+" · spirale "+fmt(r.spirale)}
-$("hist").innerHTML=db.hist.length?"Récent :<br>"+db.hist.slice(0,8).map(h=>h.piece+" · "+h.done+"/"+h.qty+" · prod "+fmt(h.prod)).join("<br>"):"Pas encore de série terminée."}
-function tick(){$("clock").textContent=new Date().toLocaleString("fr-FR");const s=S();if(!(s.qty&&!s.ended&&!s.recap))return;const add=(s.phase&&s.phase!=="stop"&&!db.halted&&s.phaseStarted)?Date.now()-s.phaseStarted:0;$("nowTime").textContent=db.halted?"STOP":fmt(add);$("nowPhase").textContent=db.halted?"Arrêt journée":(LABELS[s.phase]||"—");$("nowMeta").textContent=s.done+" / "+s.qty+" · TE "+hNum(s.teMs)+" h · TP "+hNum(s.tpMs)+" h";$("kDone").textContent=s.done;$("kLeft").textContent=Math.max(0,s.qty-s.done);const pace=s.done>=1?liveMs("prod")/s.done:s.teMs;$("kEta").textContent=hm(Date.now()+Math.max(0,s.qty-s.done)*pace);$("proj").innerHTML=projection()}
+function paint(){const s=S();const running=s.qty&&!s.ended&&!s.recap;const st=running&&!db.halted&&s.phase==="pause"?"pause":(running&&!db.halted?"prod":"");document.body.className="theme-"+db.active.toLowerCase()+(st?" st-"+st:"");document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.p===db.active));$("pieceLab").textContent="Série Pièce "+db.active;$("setupCard").style.display=running||s.recap?"none":"block";$("runCard").style.display=running?"block":"none";$("recapCard").style.display=s.recap?"block":"none";$("btnHalt").style.display=running&&!db.halted?"":"none";$("btnResume").style.display=running&&db.halted?"":"none";["slotLunch","slotP2","slotP3"].forEach(id=>$(id).classList.toggle("on",db.openSlot===id));tick();if(s.recap){const r=s.recap;const real=r.real?hNum(r.real)+" h/p":"n/c";const vs=r.real&&r.te?((r.real-r.te)/r.te*100):null;$("recap").innerHTML=r.done+" / "+r.qty+" pièces<br>Temps pièce "+fmt(r.prod)+" · réel "+real+(vs==null?"":" · "+(vs>=0?"+":"")+Math.round(vs)+" %")+"<br>Pauses "+fmt(r.pause)}
+$("hist").innerHTML=db.hist.length?"Récent :<br>"+db.hist.slice(0,8).map(h=>h.piece+" · "+h.done+"/"+h.qty+" · "+fmt(h.prod)).join("<br>"):"Pas encore de série terminée."}
+function tick(){$("clock").textContent=new Date().toLocaleString("fr-FR");const s=S();if(!(s.qty&&!s.ended&&!s.recap))return;$("nowTime").textContent=fmt(liveProd());$("nowPhase").className="phase "+(db.halted?"pause":(s.phase||"prod"));$("nowPhase").textContent=db.halted?"Arrêt journée":(s.phase==="pause"?"Pause":"Production");$("nowMeta").textContent=s.done+" / "+s.qty+" · TE "+hNum(s.teMs)+" h · TP "+hNum(s.tpMs)+" h";$("kPauseLive").textContent=fmt(pauseLiveOnly());$("kPauseDay").textContent=Math.round(livePause()/60000)+" min";$("kDone").textContent=s.done;$("kLeft").textContent=Math.max(0,s.qty-s.done);const pace=s.done>=1?liveProd()/s.done:s.teMs;$("kEta").textContent=hm(Date.now()+Math.max(0,s.qty-s.done)*pace+plannedSplit().todo);$("proj").innerHTML=projection()}
+function toggleSlot(id){db.openSlot=db.openSlot===id?null:id;paint()}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPiece(b.dataset.p));
-["arrIn","depIn","p1In","p2In"].forEach(id=>$(id).addEventListener("input",()=>{db.arr=$("arrIn").value;db.dep=$("depIn").value;db.p1=+$("p1In").value||0;db.p2=+$("p2In").value||0;save()}));
+["arrIn","depIn"].forEach(id=>$(id).addEventListener("input",()=>{db.arr=$("arrIn").value;db.dep=$("depIn").value;save()}));
+["l1","l2","s1","s2","t1","t2"].forEach(id=>$(id).addEventListener("input",()=>{db.slots.l1=$("l1").value;db.slots.l2=$("l2").value;db.slots.s1=$("s1").value;db.slots.s2=$("s2").value;db.slots.t1=$("t1").value;db.slots.t2=$("t2").value;save()}));
 ["teIn","tpIn","qtyIn"].forEach(id=>$(id).addEventListener("input",()=>{S().draft={te:$("teIn").value,tp:$("tpIn").value,qty:$("qtyIn").value};save()}));
+$("btnLunch").onclick=()=>toggleSlot("slotLunch");$("btnP2").onclick=()=>toggleSlot("slotP2");$("btnP3").onclick=()=>toggleSlot("slotP3");
 $("btnStart").onclick=startSeries;$("btnPiece").onclick=addPiece;$("btnEnd").onclick=endSeries;$("btnNew").onclick=newSeries;$("btnHalt").onclick=haltDay;$("btnResume").onclick=resumeDay;
-document.querySelectorAll("[data-ph]").forEach(b=>b.onclick=()=>startPhase(b.dataset.ph));
+$("btnProd").onclick=()=>startPhase("prod");$("btnPause").onclick=()=>startPhase("pause");
 fillDraft();paint();setInterval(tick,1000);
 </script></body></html>
