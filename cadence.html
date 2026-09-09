@@ -91,7 +91,8 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 <div class="kpi"><div class="lab">Restantes</div><b id="kLeft">—</b></div>
 <div class="kpi"><div class="lab">Fin estimée</div><b id="kEta">—</b></div>
 </div>
-<div id="gapBox" class="gap mid">Note l'heure de départ</div>
+<div id="gapBox" class="gap mid">Cadence vs cible</div>
+<div id="dayBox" class="gap mid">Journée</div>
 <div class="hint" id="proj" style="margin-top:8px"></div>
 <button class="btn plus" id="btnPiece" type="button">+1 pièce</button>
 <div class="actions">
@@ -142,7 +143,17 @@ function haltDay(){Object.keys(db.series).forEach(k=>closePhase(db.series[k]));d
 function resumeDay(){const s=S();db.halted=false;if(s.qty&&!s.ended){s.phase="prod";s.phaseStarted=Date.now()}save();paint()}
 function projection(){const pl=plannedSplit();if(!pl.all)return"";return "Pauses prévues "+Math.round(pl.all/60000)+" min · déjà "+Math.round(pl.done/60000)+" · à venir "+Math.round(pl.todo/60000)}
 function paint(){const s=S();const running=s.qty&&!s.ended&&!s.recap;const st=running&&!db.halted&&s.phase==="pause"?"pause":(running&&!db.halted?"prod":"");document.body.className="theme-"+db.active.toLowerCase()+(st?" st-"+st:"");document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.p===db.active));$("pieceLab").textContent="Série Pièce "+db.active;$("setupCard").style.display=running||s.recap?"none":"block";$("runCard").style.display=running?"block":"none";$("recapCard").style.display=s.recap?"block":"none";$("btnHalt").style.display=running&&!db.halted?"":"none";$("btnResume").style.display=running&&db.halted?"":"none";["slotLunch","slotP2","slotP3"].forEach(id=>$(id).classList.toggle("on",db.openSlot===id));tick();if(s.recap){const r=s.recap;const real=r.real?hNum(r.real)+" h/p":"n/c";const vs=r.real&&r.te?((r.real-r.te)/r.te*100):null;$("recap").innerHTML=r.done+" / "+r.qty+" pièces<br>Temps pièce "+fmt(r.prod)+" · réel "+real+(vs==null?"":" · "+(vs>=0?"+":"")+Math.round(vs)+" %")+"<br>Pauses "+fmt(r.pause)}}
-function tick(){$("clock").textContent=new Date().toLocaleString("fr-FR");const s=S();if(!(s.qty&&!s.ended&&!s.recap))return;$("nowTime").textContent=fmt(liveProd());$("nowPhase").className="phase "+(db.halted?"pause":(s.phase||"prod"));$("nowPhase").textContent=db.halted?"Arrêt journée":(s.phase==="pause"?"Pause":"Production");$("nowMeta").textContent=s.done+" / "+s.qty+" · TE "+hNum(s.teMs)+" h · TP "+hNum(s.tpMs)+" h";$("kPauseLive").textContent=fmt(pauseLiveOnly());$("kPauseDay").textContent=Math.round(livePause()/60000)+" min";$("kDone").textContent=s.done;$("kLeft").textContent=Math.max(0,s.qty-s.done);const pace=s.done>=1?liveProd()/s.done:s.teMs;const dep=parseClock(db.dep);const eta=Date.now()+Math.max(0,s.qty-s.done)*pace+plannedSplit().todo;$("kEta").textContent=hm(eta);const box=$("gapBox");if(!dep){box.className="gap mid";box.textContent="Note l'heure de départ pour voir l'avance ou le retard"}else{const over=eta-dep;if(over>5*60000){box.className="gap late";box.textContent="En retard de "+durTxt(over)+" · fin "+hm(eta)+" / départ "+hm(dep)}else if(over<-5*60000){box.className="gap ok";box.textContent="En avance de "+durTxt(-over)+" · fin "+hm(eta)+" / départ "+hm(dep)}else{box.className="gap ok";box.textContent="À l'heure · fin "+hm(eta)+" / départ "+hm(dep)}}$("proj").innerHTML=projection()}
+function tick(){$("clock").textContent=new Date().toLocaleString("fr-FR");const s=S();if(!(s.qty&&!s.ended&&!s.recap))return;$("nowTime").textContent=fmt(liveProd());$("nowPhase").className="phase "+(db.halted?"pause":(s.phase||"prod"));$("nowPhase").textContent=db.halted?"Arrêt journée":(s.phase==="pause"?"Pause":"Production");$("nowMeta").textContent=s.done+" / "+s.qty+" · TE "+hNum(s.teMs)+" h · TP "+hNum(s.tpMs)+" h";$("kPauseLive").textContent=fmt(pauseLiveOnly());$("kPauseDay").textContent=Math.round(livePause()/60000)+" min";$("kDone").textContent=s.done;$("kLeft").textContent=Math.max(0,s.qty-s.done);const left=Math.max(0,s.qty-s.done);const pace=s.done>=1?liveProd()/s.done:s.teMs;const need=left*pace+plannedSplit().todo;const dep=parseClock(db.dep);const box=$("gapBox"),day=$("dayBox");
+if(s.done<1){box.className="gap mid";box.textContent="Cible "+hNum(s.teMs)+" h/pièce · tape +1 pour comparer à la cadence réelle"}
+else{const real=liveProd()/s.done,d=real-s.teMs,pct=s.teMs?Math.round(d/s.teMs*100):0;
+if(d>s.teMs*0.05){box.className="gap late";box.textContent="Plus lent que la cible · "+hNum(real)+" h/p pour "+hNum(s.teMs)+" · +"+Math.abs(pct)+" %"}
+else if(d<-s.teMs*0.05){box.className="gap ok";box.textContent="Plus rapide que la cible · "+hNum(real)+" h/p pour "+hNum(s.teMs)+" · "+pct+" %"}
+else{box.className="gap ok";box.textContent="Cadence dans la cible · "+hNum(real)+" h/p (TE "+hNum(s.teMs)+")"}}
+if(!dep){day.className="gap mid";day.textContent="Note le départ pour voir s'il reste du travail demain";$("kEta").textContent=hm(Date.now()+need)}
+else{const avail=Math.max(0,dep-Date.now());
+if(need<=avail+5*60000){day.className="gap ok";day.textContent="Fini aujourd'hui · vers "+hm(Date.now()+need);$("kEta").textContent=hm(Date.now()+need)}
+else{day.className="gap mid";day.textContent="Reste demain : "+durTxt(need-avail);$("kEta").textContent="demain"}}
+$("proj").innerHTML=projection()}
 function toggleSlot(id){db.openSlot=db.openSlot===id?null:id;paint()}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPiece(b.dataset.p));
 ["arrIn","depIn"].forEach(id=>$(id).addEventListener("input",()=>{db.arr=$("arrIn").value;db.dep=$("depIn").value;save()}));
