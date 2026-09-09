@@ -42,6 +42,12 @@ table.an.prop b{color:#e8c8d0}
 table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4;border-color:#3a4652}
 .ttl{margin:10px 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
 .ttl.c{color:#4ade80}.ttl.o{color:#8eb4d0}.ttl.s{color:#fbbf24}.ttl.p{color:#d4b4bc}
+#adjBox{padding:8px 10px}
+#adjBox .lab{margin:0}
+#adjBox input{margin:0;padding:8px 10px}
+.adj-row{display:grid;grid-template-columns:108px 1fr;gap:6px;align-items:center;margin:3px 0}
+.adj-acts{margin:8px 0 0;flex-wrap:nowrap;gap:6px}
+.adj-acts .btn{min-height:42px;padding:8px 4px;flex:1}
 </style></head><body>
 <header><h1>Pointeuse OF</h1><div class="clock" id="clock"></div></header>
 <nav>
@@ -81,14 +87,13 @@ table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4;border-color:#3
 </div>
 </div>
 <div id="adjBox" class="form" style="display:none">
-<div class="lab" id="adjTitle">Ajuster</div>
-<div class="lab">Mise en route</div><input id="adjSetup" inputmode="numeric"/>
-<div class="lab">Production</div><input id="adjProd" inputmode="numeric"/>
-<div class="lab">Pause</div><input id="adjPause" inputmode="numeric"/>
-<div class="lab">Support</div><input id="adjSupport" inputmode="numeric"/>
-<div class="lab">Admin</div><input id="adjAdmin" inputmode="numeric"/>
-<div class="actions"><button class="btn go" id="btnAdjPlus">+ Ajouter</button><button class="btn stop" id="btnAdjMinus">− Retirer</button></div>
-<button class="btn full" id="btnAdjCancel">Fermer</button>
+<div class="lab" id="adjTitle">Ajuster · Temps en minutes</div>
+<div class="adj-row"><div class="lab">Mise en route</div><input id="adjSetup" inputmode="numeric"/></div>
+<div class="adj-row"><div class="lab">Production</div><input id="adjProd" inputmode="numeric"/></div>
+<div class="adj-row"><div class="lab">Pause</div><input id="adjPause" inputmode="numeric"/></div>
+<div class="adj-row"><div class="lab">Support</div><input id="adjSupport" inputmode="numeric"/></div>
+<div class="adj-row"><div class="lab">Admin</div><input id="adjAdmin" inputmode="numeric"/></div>
+<div class="actions adj-acts"><button class="btn go" id="btnAdjPlus">+ Ajouter</button><button class="btn stop" id="btnAdjMinus">− Retirer</button><button class="btn" id="btnAdjCancel">Fermer</button></div>
 </div>
 </section>
 <section class="screen" id="screen-journal">
@@ -150,8 +155,8 @@ function haltDay(){const c=db.current;if(!c||c.phase==="stop")return;closePhase(
 function checkOvernight(){const c=db.current;if(!c||c.phase==="stop")return;if(ymd(c.phaseStarted)===ymd(new Date()))return;if(c.nightAsk===ymd(new Date()))return;c.nightAsk=ymd(new Date());save();if(confirm("L'OF "+c.of+" tournait encore depuis hier. Couper le chrono maintenant ?"))haltDay()}
 function endLot(){const c=db.current;if(!c)return;if(!confirm("Terminer l'OF "+c.of+" ?"))return;closePhase();db.lots.push({of:c.of,ref:c.ref,qty:c.qty,teMs:c.teMs||0,tpMs:c.tpMs||0,setupMs:c.setupMs,prodMs:c.prodMs,pauseMs:c.pauseMs||0,supportMs:c.supportMs||0,adminMs:c.adminMs||0,setupAdjMs:c.setupAdjMs||0,prodAdjMs:c.prodAdjMs||0,pauseAdjMs:c.pauseAdjMs||0,supportAdjMs:c.supportAdjMs||0,adminAdjMs:c.adminAdjMs||0,started:c.started,ended:Date.now(),date:ymd(c.started),segs:c.segs});db.current=null;adjOf=null;$("adjBox").style.display="none";save();render()}
 function pieceTimes(l){const n=nets(l);return{work:n.work,piece:l.qty?n.prod/l.qty:null,charge:l.qty?n.work/l.qty:null,n}}
-function openAdj(ofNum){adjOf=ofNum||(db.current&&db.current.of);if(!adjOf)return;$("adjTitle").textContent="Ajuster \u00b7 OF "+adjOf;["adjSetup","adjProd","adjPause","adjSupport","adjAdmin"].forEach(id=>$(id).value="");$("adjBox").style.display="block";screen="lot";render()}
-function applyAdj(sign){if(!adjOf)return;const keys=[["adjSetup","setupAdjMs"],["adjProd","prodAdjMs"],["adjPause","pauseAdjMs"],["adjSupport","supportAdjMs"],["adjAdmin","adminAdjMs"]];const vals=keys.map(k=>parseMin($(k[0]).value));if(vals.some(v=>v==null||v<0)||!vals.some(v=>v)){alert("Minutes invalides.");return}const o=db.current&&db.current.of===adjOf?db.current:db.lots.find(x=>x.of===adjOf);if(!o)return;keys.forEach((k,i)=>o[k[1]]=(o[k[1]]||0)+sign*vals[i]);save();render()}
+function openAdj(ofNum){adjOf=ofNum||(db.current&&db.current.of);if(!adjOf)return;$("adjTitle").textContent="Ajuster OF "+adjOf+" · Temps en minutes";["adjSetup","adjProd","adjPause","adjSupport","adjAdmin"].forEach(id=>$(id).value="");$("adjBox").style.display="block";screen="lot";render()}
+function applyAdj(sign){if(!adjOf)return;const keys=[["adjSetup","setupAdjMs"],["adjProd","prodAdjMs"],["adjPause","pauseAdjMs"],["adjSupport","supportAdjMs"],["adjAdmin","adminAdjMs"]];const vals=keys.map(k=>parseMin($(k[0]).value));if(vals.some(v=>v==null||v<0)||!vals.some(v=>v)){alert("Minutes invalides.");return}const o=db.current&&db.current.of===adjOf?db.current:db.lots.find(x=>x.of===adjOf);if(!o)return;keys.forEach((k,i)=>o[k[1]]=(o[k[1]]||0)+sign*vals[i]);keys.forEach(k=>$(k[0]).value="");$("adjBox").style.display="none";adjOf=null;save();render()}
 function mondayOf(d){const x=new Date(d);x.setHours(0,0,0,0);const day=x.getDay();x.setDate(x.getDate()+(day===0?-6:1-day));return x}
 function clip(a,b,c,d){const x=Math.max(a,c),y=Math.min(b,d);return y>x?y-x:0}
 function dayStats(day){const ds=new Date(day+"T00:00:00").getTime(),de=ds+86400000,out={setup:0,prod:0,pause:0,support:0,admin:0};const all=[...db.lots];if(db.current){all.push({...db.current,segs:(db.current.segs||[]).map(s=>s.end?s:{...s,end:Date.now()})})}all.forEach(l=>{(l.segs||[]).forEach(s=>{if(!s.start||!s.end)return;const add=clip(s.start,s.end,ds,de);if(out[s.kind]!=null)out[s.kind]+=add});if(ymd(l.started)===day){out.setup+=l.setupAdjMs||0;out.prod+=l.prodAdjMs||0;out.pause+=l.pauseAdjMs||0;out.support+=l.supportAdjMs||0;out.admin+=l.adminAdjMs||0}});const d=db.days[day]||{};out.work=Math.max(0,out.setup)+Math.max(0,out.prod);out.presence=d.conge?0:(d.presenceMs||0);out.conge=!!d.conge;return out}
