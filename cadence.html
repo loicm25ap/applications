@@ -25,7 +25,7 @@ body.st-prod .card{border-color:#3d8a5c}body.st-pause .card{border-color:#8a5058
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--text);font-size:16px;margin-top:3px}
-.big{font-size:28px;font-weight:600;color:var(--gold);margin:4px 0}
+.big{font-size:28px;font-weight:600;color:var(--gold);margin:4px 0}.lap{font-size:20px;font-weight:600;color:#c8c2b4;margin:8px 0 4px;font-variant-numeric:tabular-nums}
 .smtime{font-size:18px;font-weight:600;color:#d4b4b4}
 .kpi{background:#15181b;border:1px solid var(--line);border-radius:10px;padding:8px}
 .kpi b{display:block;font-size:16px}
@@ -36,7 +36,7 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 .gap.mid{background:#222018;border-color:#8a7349;color:#e4d4b0}
 .actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .btn{flex:1;min-height:44px;border:1px solid var(--line);border-radius:10px;background:#17191b;color:var(--text);font-size:12px}
-.btn.plus{flex:1 1 100%;min-height:56px;font-size:18px;background:#1a3d2c;border-color:#3d8a5c;color:#d0f0dc}
+.btn.plus{flex:2;min-height:56px;font-size:18px;background:#1a3d2c;border-color:#3d8a5c;color:#d0f0dc}
 .btn.prod{background:#1a3d2c;border-color:#3d8a5c}
 .btn.pause{background:#3a2428;border-color:#8a5058}
 .btn.stop{background:#3a2424;border-color:#8a4a4a}
@@ -78,8 +78,10 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 <button class="btn gold" id="btnStart" type="button" style="width:100%;margin-top:8px">Démarrer</button>
 </div>
 <div id="runCard" class="card" style="display:none">
-<div class="lab">Temps sur la pièce</div>
-<div class="big" id="nowTime">00:00:00</div>
+<div class="row">
+<div><div class="lab">Temps sur la série</div><div class="big" id="nowTime">00:00:00</div></div>
+<div><div class="lab">Temps pièce</div><div class="lap" id="lapTime">00:00:00</div></div>
+</div>
 <div class="phase prod" id="nowPhase">Production</div>
 <div class="hint" id="nowMeta"></div>
 <div class="row" style="margin-top:8px">
@@ -94,7 +96,10 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 <div id="gapBox" class="gap mid">Cadence vs cible</div>
 <div id="dayBox" class="gap mid">Journée</div>
 <div class="hint" id="proj" style="margin-top:8px"></div>
+<div class="actions">
 <button class="btn plus" id="btnPiece" type="button">+1 pièce</button>
+<button class="btn stop" id="btnMinus" type="button">−1 pièce</button>
+</div>
 <div class="actions">
 <button class="btn prod" id="btnProd" type="button">Production</button>
 <button class="btn pause" id="btnPause" type="button">Pause</button>
@@ -114,7 +119,7 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 <script>
 const KEY="cadence_v1";
 const $=id=>document.getElementById(id);
-function emptySeries(){return{teMs:0,tpMs:0,qty:0,done:0,phase:null,phaseStarted:0,prodMs:0,pauseMs:0,started:0,ended:0,recap:null,draft:{te:"",tp:"",qty:""}}}
+function emptySeries(){return{teMs:0,tpMs:0,qty:0,done:0,phase:null,phaseStarted:0,prodMs:0,pauseMs:0,pieceStarted:0,started:0,ended:0,recap:null,draft:{te:"",tp:"",qty:""}}}
 function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.series){["A","B","C"].forEach(k=>{const s=x.series[k];if(!s.draft)s.draft={te:"",tp:"",qty:""};if(s.prodMs==null)s.prodMs=0;if(s.pauseMs==null)s.pauseMs=0});if(!x.slots)x.slots={l1:"",l2:"",s1:"",s2:"",t1:"",t2:""};return x}}catch(e){}return{active:"A",arr:"",dep:"",halted:false,slots:{l1:"",l2:"",s1:"",s2:"",t1:"",t2:""},openSlot:null,series:{A:emptySeries(),B:emptySeries(),C:emptySeries()}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 let db=load();
@@ -126,6 +131,9 @@ function hm(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")
 function durTxt(ms){ms=Math.abs(ms||0);const m=Math.round(ms/60000);if(m<60)return m+" min";const h=Math.floor(m/60),mm=m%60;return h+" h"+(mm?" "+String(mm).padStart(2,"0"):"")}
 function S(){return db.series[db.active]}
 function liveProd(){const s=S();let t=s.prodMs||0;if(s.phase==="prod"&&s.phaseStarted&&!db.halted)t+=Date.now()-s.phaseStarted;return t}
+function liveLap(){const s=S();if(!s.qty||s.ended||db.halted||s.phase!=="prod")return 0;const st=s.pieceStarted||s.phaseStarted||s.started;return st?Date.now()-st:0}
+function stopOthers(keep){["A","B","C"].forEach(k=>{if(k===keep)return;const o=db.series[k];if(o.phase==="prod"||o.phase==="pause")closePhase(o)})}
+function hNum3(ms){return ((ms||0)/3600000).toLocaleString("fr-FR",{minimumFractionDigits:3,maximumFractionDigits:3})}
 function livePause(){const s=S();let t=s.pauseMs||0;if(s.phase==="pause"&&s.phaseStarted&&!db.halted)t+=Date.now()-s.phaseStarted;return t}
 function pauseLiveOnly(){const s=S();return (s.phase==="pause"&&s.phaseStarted&&!db.halted)?Date.now()-s.phaseStarted:0}
 function closePhase(s){if(!s.phase||s.phase==="stop"||!s.phaseStarted)return;if(s.phase==="prod")s.prodMs=(s.prodMs||0)+Date.now()-s.phaseStarted;if(s.phase==="pause")s.pauseMs=(s.pauseMs||0)+Date.now()-s.phaseStarted;s.phaseStarted=0}
@@ -133,22 +141,23 @@ function slotMs(a,b){const x=parseClock(a),y=parseClock(b);if(x==null||y==null||
 function planned(){const sl=db.slots;return[{a:sl.l1,b:sl.l2},{a:sl.s1,b:sl.s2},{a:sl.t1,b:sl.t2}].map(p=>({...p,ms:slotMs(p.a,p.b),start:parseClock(p.a),end:parseClock(p.b)})).filter(p=>p.ms)}
 function plannedSplit(){const now=Date.now();let done=0,todo=0;planned().forEach(p=>{if(p.end<=now)done+=p.ms;else if(p.start>=now)todo+=p.ms;else{done+=now-p.start;todo+=p.end-now}});return{done,todo,all:done+todo}}
 function fillDraft(){const s=S();$("teIn").value=s.draft.te||"";$("tpIn").value=s.draft.tp||"";$("qtyIn").value=s.draft.qty||"";$("arrIn").value=db.arr||"";$("depIn").value=db.dep||"";$("l1").value=db.slots.l1||"";$("l2").value=db.slots.l2||"";$("s1").value=db.slots.s1||"";$("s2").value=db.slots.s2||"";$("t1").value=db.slots.t1||"";$("t2").value=db.slots.t2||""}
-function startPhase(kind){const s=S();if(db.halted)db.halted=false;if(s.phase===kind&&s.phaseStarted)return;closePhase(s);s.phase=kind;s.phaseStarted=Date.now();save();paint()}
-function switchPiece(p){if(p===db.active)return;closePhase(S());db.active=p;save();paint();fillDraft()}
-function startSeries(){const s=S();const te=parseH($("teIn").value),tp=parseH($("tpIn").value),qty=parseInt($("qtyIn").value,10);if(te==null||tp==null||!qty){alert("TE, TP et nombre de pièces.");return}s.draft={te:$("teIn").value,tp:$("tpIn").value,qty:$("qtyIn").value};s.teMs=te;s.tpMs=tp;s.qty=qty;s.done=0;s.prodMs=0;s.pauseMs=0;s.started=Date.now();s.ended=0;s.recap=null;s.phase="prod";s.phaseStarted=Date.now();db.halted=false;save();paint()}
-function addPiece(){const s=S();if(!s.qty||s.ended)return;if(db.halted){db.halted=false;s.phase="prod";s.phaseStarted=Date.now()}if(s.phase!=="prod")startPhase("prod");s.done=Math.min(s.qty,s.done+1);save();paint()}
+function startPhase(kind){const s=S();if(db.halted)db.halted=false;if(s.phase===kind&&s.phaseStarted)return;stopOthers(db.active);closePhase(s);s.phase=kind;s.phaseStarted=Date.now();if(kind==="prod"&&!s.pieceStarted)s.pieceStarted=Date.now();save();paint()}
+function switchPiece(p){if(p===db.active)return;db.active=p;save();paint();fillDraft()}
+function startSeries(){const s=S();const te=parseH($("teIn").value),tp=parseH($("tpIn").value),qty=parseInt($("qtyIn").value,10);if(te==null||tp==null||!qty){alert("TE, TP et nombre de pièces.");return}s.draft={te:$("teIn").value,tp:$("tpIn").value,qty:$("qtyIn").value};s.teMs=te;s.tpMs=tp;s.qty=qty;s.done=0;s.prodMs=0;s.pauseMs=0;s.started=Date.now();s.ended=0;s.recap=null;s.phase="prod";s.phaseStarted=Date.now();s.pieceStarted=Date.now();db.halted=false;stopOthers(db.active);save();paint()}
+function addPiece(){const s=S();if(!s.qty||s.ended)return;if(db.halted){db.halted=false;s.phase="prod";s.phaseStarted=Date.now()}if(s.phase!=="prod")startPhase("prod");s.done=Math.min(s.qty,s.done+1);s.pieceStarted=Date.now();save();paint()}
+function minusPiece(){const s=S();if(!s.qty||s.ended||s.done<=0)return;s.done-=1;s.pieceStarted=Date.now();save();paint()}
 function endSeries(){const s=S();if(!s.qty||s.ended)return;if(!confirm("Terminer la série "+db.active+" ?"))return;closePhase(s);s.ended=Date.now();s.phase="stop";const real=s.done?s.prodMs/s.done:null;s.recap={done:s.done,qty:s.qty,prod:s.prodMs,pause:s.pauseMs,te:s.teMs,tp:s.tpMs,real};save();paint()}
 function newSeries(){const keep=S().draft;db.series[db.active]=emptySeries();db.series[db.active].draft=keep||{te:"",tp:"",qty:""};save();paint();fillDraft()}
 function haltDay(){Object.keys(db.series).forEach(k=>closePhase(db.series[k]));db.halted=true;save();paint()}
-function resumeDay(){const s=S();db.halted=false;if(s.qty&&!s.ended){s.phase="prod";s.phaseStarted=Date.now()}save();paint()}
+function resumeDay(){const s=S();db.halted=false;if(s.qty&&!s.ended){stopOthers(db.active);s.phase="prod";s.phaseStarted=Date.now();if(!s.pieceStarted)s.pieceStarted=Date.now()}save();paint()}
 function projection(){const pl=plannedSplit();if(!pl.all)return"";return "Pauses prévues "+Math.round(pl.all/60000)+" min · déjà "+Math.round(pl.done/60000)+" · à venir "+Math.round(pl.todo/60000)}
-function paint(){const s=S();const running=s.qty&&!s.ended&&!s.recap;const st=running&&!db.halted&&s.phase==="pause"?"pause":(running&&!db.halted?"prod":"");document.body.className="theme-"+db.active.toLowerCase()+(st?" st-"+st:"");document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.p===db.active));$("pieceLab").textContent="Série Pièce "+db.active;$("setupCard").style.display=running||s.recap?"none":"block";$("runCard").style.display=running?"block":"none";$("recapCard").style.display=s.recap?"block":"none";$("btnHalt").style.display=running&&!db.halted?"":"none";$("btnResume").style.display=running&&db.halted?"":"none";["slotLunch","slotP2","slotP3"].forEach(id=>$(id).classList.toggle("on",db.openSlot===id));tick();if(s.recap){const r=s.recap;const real=r.real?hNum(r.real)+" h/p":"n/c";const vs=r.real&&r.te?((r.real-r.te)/r.te*100):null;$("recap").innerHTML=r.done+" / "+r.qty+" pièces<br>Temps pièce "+fmt(r.prod)+" · réel "+real+(vs==null?"":" · "+(vs>=0?"+":"")+Math.round(vs)+" %")+"<br>Pauses "+fmt(r.pause)}}
-function tick(){$("clock").textContent=new Date().toLocaleString("fr-FR");const s=S();if(!(s.qty&&!s.ended&&!s.recap))return;$("nowTime").textContent=fmt(liveProd());$("nowPhase").className="phase "+(db.halted?"pause":(s.phase||"prod"));$("nowPhase").textContent=db.halted?"Arrêt journée":(s.phase==="pause"?"Pause":"Production");$("nowMeta").textContent=s.done+" / "+s.qty+" · TE "+hNum(s.teMs)+" h · TP "+hNum(s.tpMs)+" h";$("kPauseLive").textContent=fmt(pauseLiveOnly());$("kPauseDay").textContent=Math.round(livePause()/60000)+" min";$("kDone").textContent=s.done;$("kLeft").textContent=Math.max(0,s.qty-s.done);const left=Math.max(0,s.qty-s.done);const pace=s.done>=1?liveProd()/s.done:s.teMs;const need=left*pace+plannedSplit().todo;const dep=parseClock(db.dep);const box=$("gapBox"),day=$("dayBox");
+function paint(){const s=S();const running=s.qty&&!s.ended&&!s.recap;const st=running&&!db.halted&&s.phase==="pause"?"pause":(running&&!db.halted?"prod":"");document.body.className="theme-"+db.active.toLowerCase()+(st?" st-"+st:"");document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.p===db.active));$("pieceLab").textContent="Série Pièce "+db.active;$("setupCard").style.display=running||s.recap?"none":"block";$("runCard").style.display=running?"block":"none";$("recapCard").style.display=s.recap?"block":"none";$("btnHalt").style.display=running&&!db.halted?"":"none";$("btnResume").style.display=running&&db.halted?"":"none";["slotLunch","slotP2","slotP3"].forEach(id=>$(id).classList.toggle("on",db.openSlot===id));tick();if(s.recap){const r=s.recap;const real=r.real?hNum3(r.real)+" h/p":"n/c";const vs=r.real&&r.te?((r.real-r.te)/r.te*100):null;$("recap").innerHTML=r.done+" / "+r.qty+" pièces<br>Temps pièce "+fmt(r.prod)+" · réel "+real+(vs==null?"":" · "+(vs>=0?"+":"")+Math.round(vs)+" %")+"<br>Pauses "+fmt(r.pause)}}
+function tick(){$("clock").textContent=new Date().toLocaleString("fr-FR");const s=S();if(!(s.qty&&!s.ended&&!s.recap))return;$("nowTime").textContent=fmt(liveProd());$("lapTime").textContent=fmt(liveLap());$("nowPhase").className="phase "+(db.halted?"pause":(s.phase||"prod"));$("nowPhase").textContent=db.halted?"Arrêt journée":(s.phase==="pause"?"Pause":"Production");$("nowMeta").textContent=s.done+" / "+s.qty+" · TE "+hNum(s.teMs)+" h · TP "+hNum(s.tpMs)+" h";$("kPauseLive").textContent=fmt(pauseLiveOnly());$("kPauseDay").textContent=Math.round(livePause()/60000)+" min";$("kDone").textContent=s.done;$("kLeft").textContent=Math.max(0,s.qty-s.done);const left=Math.max(0,s.qty-s.done);const pace=s.done>=1?liveProd()/s.done:s.teMs;const need=left*pace+plannedSplit().todo;const dep=parseClock(db.dep);const box=$("gapBox"),day=$("dayBox");
 if(s.done<1){box.className="gap mid";box.textContent="Cible "+hNum(s.teMs)+" h/pièce · tape +1 pour comparer à la cadence réelle"}
 else{const real=liveProd()/s.done,d=real-s.teMs,pct=s.teMs?Math.round(d/s.teMs*100):0;
-if(d>s.teMs*0.05){box.className="gap late";box.textContent="Plus lent que la cible · "+hNum(real)+" h/p pour "+hNum(s.teMs)+" · +"+Math.abs(pct)+" %"}
-else if(d<-s.teMs*0.05){box.className="gap ok";box.textContent="Plus rapide que la cible · "+hNum(real)+" h/p pour "+hNum(s.teMs)+" · "+pct+" %"}
-else{box.className="gap ok";box.textContent="Cadence dans la cible · "+hNum(real)+" h/p (TE "+hNum(s.teMs)+")"}}
+if(d>s.teMs*0.05){box.className="gap late";box.textContent="Plus lent que la cible · "+hNum3(real)+" h/p pour "+hNum(s.teMs)+" · +"+Math.abs(pct)+" %"}
+else if(d<-s.teMs*0.05){box.className="gap ok";box.textContent="Plus rapide que la cible · "+hNum3(real)+" h/p pour "+hNum(s.teMs)+" · "+pct+" %"}
+else{box.className="gap ok";box.textContent="Cadence dans la cible · "+hNum3(real)+" h/p (TE "+hNum(s.teMs)+")"}}
 if(!dep){day.className="gap mid";day.textContent="Note le départ pour voir s'il reste du travail demain";$("kEta").textContent=hm(Date.now()+need)}
 else{const avail=Math.max(0,dep-Date.now());
 if(need<=avail+5*60000){day.className="gap ok";day.textContent="Fini aujourd'hui · vers "+hm(Date.now()+need);$("kEta").textContent=hm(Date.now()+need)}
@@ -160,7 +169,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPiece(b.dataset
 ["l1","l2","s1","s2","t1","t2"].forEach(id=>$(id).addEventListener("input",()=>{db.slots.l1=$("l1").value;db.slots.l2=$("l2").value;db.slots.s1=$("s1").value;db.slots.s2=$("s2").value;db.slots.t1=$("t1").value;db.slots.t2=$("t2").value;save()}));
 ["teIn","tpIn","qtyIn"].forEach(id=>$(id).addEventListener("input",()=>{S().draft={te:$("teIn").value,tp:$("tpIn").value,qty:$("qtyIn").value};save()}));
 $("btnLunch").onclick=()=>toggleSlot("slotLunch");$("btnP2").onclick=()=>toggleSlot("slotP2");$("btnP3").onclick=()=>toggleSlot("slotP3");
-$("btnStart").onclick=startSeries;$("btnPiece").onclick=addPiece;$("btnEnd").onclick=endSeries;$("btnNew").onclick=newSeries;$("btnHalt").onclick=haltDay;$("btnResume").onclick=resumeDay;
+$("btnStart").onclick=startSeries;$("btnPiece").onclick=addPiece;$("btnMinus").onclick=minusPiece;$("btnEnd").onclick=endSeries;$("btnNew").onclick=newSeries;$("btnHalt").onclick=haltDay;$("btnResume").onclick=resumeDay;
 $("btnProd").onclick=()=>startPhase("prod");$("btnPause").onclick=()=>startPhase("pause");
 fillDraft();paint();setInterval(tick,1000);
 </script></body></html>
