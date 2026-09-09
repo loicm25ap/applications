@@ -80,7 +80,7 @@ input{width:100%;background:#101214;border:1px solid var(--line);border-radius:8
 <div id="runCard" class="card" style="display:none">
 <div class="row">
 <div><div class="lab">Temps sur la série</div><div class="big" id="nowTime">00:00:00</div></div>
-<div><div class="lab">Temps pièce</div><div class="lap" id="lapTime">00:00:00</div></div>
+<div><div class="lab" id="lapLab">Temps pièce</div><div class="lap" id="lapTime">00:00:00</div></div>
 </div>
 <div class="phase prod" id="nowPhase">Production</div>
 <div class="hint" id="nowMeta"></div>
@@ -152,16 +152,18 @@ function haltDay(){Object.keys(db.series).forEach(k=>closePhase(db.series[k]));d
 function resumeDay(){const s=S();db.halted=false;if(s.qty&&!s.ended){stopOthers(db.active);s.phase="prod";s.phaseStarted=Date.now();if(!s.pieceStarted)s.pieceStarted=Date.now()}save();paint()}
 function projection(){const pl=plannedSplit();if(!pl.all)return"";return "Pauses prévues "+Math.round(pl.all/60000)+" min · déjà "+Math.round(pl.done/60000)+" · à venir "+Math.round(pl.todo/60000)}
 function paint(){const s=S();const running=s.qty&&!s.ended&&!s.recap;const st=running&&!db.halted&&s.phase==="pause"?"pause":(running&&!db.halted?"prod":"");document.body.className="theme-"+db.active.toLowerCase()+(st?" st-"+st:"");document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.p===db.active));$("pieceLab").textContent="Série Pièce "+db.active;$("setupCard").style.display=running||s.recap?"none":"block";$("runCard").style.display=running?"block":"none";$("recapCard").style.display=s.recap?"block":"none";$("btnHalt").style.display=running&&!db.halted?"":"none";$("btnResume").style.display=running&&db.halted?"":"none";["slotLunch","slotP2","slotP3"].forEach(id=>$(id).classList.toggle("on",db.openSlot===id));tick();if(s.recap){const r=s.recap;const real=r.real?hNum3(r.real)+" h/p":"n/c";const vs=r.real&&r.te?((r.real-r.te)/r.te*100):null;$("recap").innerHTML=r.done+" / "+r.qty+" pièces<br>Temps pièce "+fmt(r.prod)+" · réel "+real+(vs==null?"":" · "+(vs>=0?"+":"")+Math.round(vs)+" %")+"<br>Pauses "+fmt(r.pause)}}
-function tick(){$("clock").textContent=new Date().toLocaleString("fr-FR");const s=S();if(!(s.qty&&!s.ended&&!s.recap))return;$("nowTime").textContent=fmt(liveProd());$("lapTime").textContent=fmt(liveLap());$("nowPhase").className="phase "+(db.halted?"pause":(s.phase||"prod"));$("nowPhase").textContent=db.halted?"Arrêt journée":(s.phase==="pause"?"Pause":"Production");$("nowMeta").textContent=s.done+" / "+s.qty+" · TE "+hNum(s.teMs)+" h · TP "+hNum(s.tpMs)+" h";$("kPauseLive").textContent=fmt(pauseLiveOnly());$("kPauseDay").textContent=Math.round(livePause()/60000)+" min";$("kDone").textContent=s.done;$("kLeft").textContent=Math.max(0,s.qty-s.done);const left=Math.max(0,s.qty-s.done);const pace=s.done>=1?liveProd()/s.done:s.teMs;const need=left*pace+plannedSplit().todo;const dep=parseClock(db.dep);const box=$("gapBox"),day=$("dayBox");
-if(s.done<1){box.className="gap mid";box.textContent="Cible "+hNum(s.teMs)+" h/pièce · tape +1 pour comparer à la cadence réelle"}
+function tick(){$("clock").textContent=new Date().toLocaleString("fr-FR");const s=S();if(!(s.qty&&!s.ended&&!s.recap))return;$("nowTime").textContent=fmt(liveProd());$("lapTime").textContent=fmt(liveLap());$("nowPhase").className="phase "+(db.halted?"pause":(s.phase||"prod"));$("nowPhase").textContent=db.halted?"Arrêt journée":(s.phase==="pause"?"Pause":"Production");$("nowMeta").textContent=s.done+" / "+s.qty+" · TE "+hNum(s.teMs)+" h · TP "+hNum(s.tpMs)+" h";$("kPauseLive").textContent=fmt(pauseLiveOnly());$("kPauseDay").textContent=Math.round(livePause()/60000)+" min";$("kDone").textContent=s.done;$("kLeft").textContent=Math.max(0,s.qty-s.done);const left=Math.max(0,s.qty-s.done);const cible=s.qty*s.teMs+(s.tpMs||0);const remain=Math.max(0,cible-liveProd())+plannedSplit().todo;const dep=parseClock(db.dep);const box=$("gapBox"),day=$("dayBox");
+$("lapLab").textContent=left===0?"Fin de série":"Temps pièce";
+if(s.done<1){box.className="gap mid";box.textContent="Cible série "+hNum(cible)+" h · TE×"+s.qty+" + TP"}
 else{const real=liveProd()/s.done,d=real-s.teMs,pct=s.teMs?Math.round(d/s.teMs*100):0;
-if(d>s.teMs*0.05){box.className="gap late";box.textContent="Plus lent que la cible · "+hNum3(real)+" h/p pour "+hNum(s.teMs)+" · +"+Math.abs(pct)+" %"}
-else if(d<-s.teMs*0.05){box.className="gap ok";box.textContent="Plus rapide que la cible · "+hNum3(real)+" h/p pour "+hNum(s.teMs)+" · "+pct+" %"}
-else{box.className="gap ok";box.textContent="Cadence dans la cible · "+hNum3(real)+" h/p (TE "+hNum(s.teMs)+")"}}
-if(!dep){day.className="gap mid";day.textContent="Note le départ pour voir s'il reste du travail demain";$("kEta").textContent=hm(Date.now()+need)}
+if(d>s.teMs*0.05){box.className="gap late";box.textContent="Plus lent que TE · "+hNum3(real)+" h/p pour "+hNum(s.teMs)+" · série "+hNum(liveProd())+" / "+hNum(cible)+" h"}
+else if(d<-s.teMs*0.05){box.className="gap ok";box.textContent="Plus rapide que TE · "+hNum3(real)+" h/p pour "+hNum(s.teMs)+" · série "+hNum(liveProd())+" / "+hNum(cible)+" h"}
+else{box.className="gap ok";box.textContent="Cadence dans TE · "+hNum3(real)+" h/p · série "+hNum(liveProd())+" / "+hNum(cible)+" h"}}
+if(left===0){day.className="gap mid";day.textContent="Pièces finies · fin de série / rangement";$("kEta").textContent="fin"}
+else if(!dep){day.className="gap mid";day.textContent="Cible restante "+durTxt(remain)+" · note le départ";$("kEta").textContent=hm(Date.now()+remain)}
 else{const avail=Math.max(0,dep-Date.now());
-if(need<=avail){day.className="gap ok";day.textContent="Fini aujourd'hui · vers "+hm(Date.now()+need);$("kEta").textContent=hm(Date.now()+need)}
-else{day.className="gap mid";day.textContent="Reste demain : "+durTxt(need-avail);$("kEta").textContent="demain"}}
+if(remain<=avail){day.className="gap ok";day.textContent="Fini aujourd'hui · vers "+hm(Date.now()+remain);$("kEta").textContent=hm(Date.now()+remain)}
+else{day.className="gap mid";day.textContent="Reste demain : "+durTxt(remain-avail);$("kEta").textContent="demain"}}
 $("proj").innerHTML=projection()}
 function toggleSlot(id){db.openSlot=db.openSlot===id?null:id;paint()}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchPiece(b.dataset.p));
