@@ -5,27 +5,27 @@
 <title>Pointeuse OF</title>
 <style>
 :root{--bg:#0e0f10;--panel:#17191b;--panel-2:#1e2124;--line:#2a2e32;--text:#e8e6e1;--muted:#9a958c;--gold:#c4a574;--gold-dim:#8a7349}
-*{box-sizing:border-box}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);margin:0}
-header{padding:12px 14px 8px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+*{box-sizing:border-box}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);margin:0;font-size:12px}
+header{padding:12px 14px 8px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
 .clock{color:var(--muted);font-size:12px;margin-top:4px}
 nav{display:flex;flex-wrap:wrap;gap:5px;padding:8px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
-nav button{flex:1 1 17%;min-width:58px;min-height:40px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;font-size:11px}nav button.on{border-color:var(--gold-dim);color:var(--gold)}
+nav button{flex:1 1 17%;min-width:58px;min-height:40px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;font-size:12px}nav button.on{border-color:var(--gold-dim);color:var(--gold)}
 main{max-width:560px;margin:0 auto;padding:12px}.screen{display:none}.screen.on{display:block}
 .now,.form,.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
 .lab{color:var(--muted);font-size:11px;text-transform:uppercase}
-.big{font-size:34px;font-weight:600;color:var(--gold);margin:4px 0}
+.big{font-size:12px;font-weight:600;color:var(--gold);margin:4px 0}
 .meta,.hint{color:var(--muted);font-size:12px;line-height:1.45}
 .phase{display:inline-block;font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);margin-top:8px}
 .phase.setup{color:#d4c4a8;border-color:#8a7350;background:#2a2620}.phase.prod{color:#c5d9cc;border-color:#5a7a66;background:#222825}.phase.pause,#nowPhase.pause{color:#d4c4cc;border-color:#8a6a76;background:#2a2428}.phase.support{color:#c4ced8;border-color:#6a7a8a;background:#24282c}.phase.admin,#nowPhase.admin{color:#cfc8d6;border-color:#7a6e86;background:#28242c}.phase.stop,#nowPhase.stop{color:#c8c4bc;border-color:#6a6660;background:#222220}
 .form input,.form select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;margin:6px 0 10px;color:var(--text)}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.chip{border:1px solid var(--line);background:var(--panel-2);color:var(--text);border-radius:99px;padding:6px 10px;font-size:11px}.chip.on{border-color:var(--gold-dim);color:var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.chip{border:1px solid var(--line);background:var(--panel-2);color:var(--text);border-radius:99px;padding:6px 10px;font-size:12px}.chip.on{border-color:var(--gold-dim);color:var(--gold)}
 .actions,.row-btns{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 button{font:inherit;color:var(--text)}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px;min-height:48px;font-size:12px;line-height:1.2}
 .btn.gold{border-color:#8a7349;color:#d4c4a8;background:#26221c;flex:1}.btn.go{border-color:#5a7a66;color:#c5d9cc;background:#222825;flex:1}.btn.pause{border-color:#8a6a76;color:#d4c4cc;background:#2a2428;flex:1}.btn.adm{border-color:#7a6e86;color:#cfc8d6;background:#28242c;flex:1}.btn.setup{border-color:#8a7350;color:#d4c4a8;background:#2a2620;flex:1}.btn.stop{border-color:#8a5a5a;color:#d4c4c4;background:#2a2222;flex:1}.btn.adj{border-color:#6a8a72;color:#c8d4cc;background:#222824;flex:1}.btn.full{width:100%}
 .btn.tech{border-color:#6a7a8a;color:#c4ced8;background:#24282c;flex:1}.btn.sm{min-height:42px;font-size:12px}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px;-webkit-tap-highlight-color:transparent}.kpi b{display:block;font-size:16px}
+.kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px;-webkit-tap-highlight-color:transparent}.kpi b{display:block;font-size:12px}
 .kpi.tap{cursor:pointer}
 .kpi.live-setup{border-color:#8a7350;background:#2a2620}.kpi.live-prod{border-color:#5a7a66;background:#222825}.kpi.live-pause{border-color:#8a6a76;background:#2a2428}.kpi.live-support{border-color:#6a7a8a;background:#24282c}.kpi.live-admin{border-color:#7a6e86;background:#28242c}
 .tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px}.tag.ok{background:#1a2e22;color:#cfe8d6}.tag.warn{background:#2a2316;color:#e6d3a8}.tag.bad{background:#2c1b1b;color:#e8c4c4}
@@ -39,7 +39,7 @@ h2{font-size:12px;color:var(--muted);text-transform:uppercase}
 <section class="screen on" id="screen-lot">
 <div class="now" id="nowBox">
 <div class="lab">En cours</div>
-<div id="nowTitle" style="font-size:20px;margin:4px 0"></div>
+<div id="nowTitle" style="font-size:12px;margin:4px 0"></div>
 <div class="big" id="nowTime">00:00:00</div>
 <div class="meta" id="nowMeta"></div>
 <div class="phase" id="nowPhase" style="display:none"></div>
