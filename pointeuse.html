@@ -1,1 +1,121 @@
-SEE artifacts/pointeuse.html
+<!DOCTYPE html>
+<html lang="fr"><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"/>
+<title>Pointeuse OF</title>
+<style>
+:root{--bg:#0e0f10;--panel:#17191b;--panel-2:#1e2124;--line:#2a2e32;--text:#e8e6e1;--muted:#9a958c;--gold:#c4a574;--gold-dim:#8a7349}
+*{box-sizing:border-box}body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);margin:0;font-size:12px}
+header{padding:12px 14px 8px;border-bottom:1px solid var(--line)}h1{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.clock{color:var(--muted);font-size:12px;margin-top:4px}
+nav{display:flex;flex-wrap:wrap;gap:5px;padding:8px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+nav button{flex:1 1 17%;min-width:58px;min-height:40px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;font-size:12px}nav button.on{border-color:var(--gold-dim);color:var(--gold)}
+main{max-width:560px;margin:0 auto;padding:12px}.screen{display:none}.screen.on{display:block}
+.now,.form,.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.lab{color:var(--muted);font-size:11px;text-transform:uppercase}
+.big{font-size:12px;font-weight:600;color:var(--gold);margin:4px 0}
+.meta,.hint{color:var(--muted);font-size:12px;line-height:1.45}
+.phase{display:inline-block;font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);margin-top:8px}
+.phase.setup{color:#d4c4a8;border-color:#8a7350;background:#2a2620}.phase.prod{color:#c5d9cc;border-color:#5a7a66;background:#222825}.phase.pause,#nowPhase.pause{color:#d4c4cc;border-color:#8a6a76;background:#2a2428}.phase.support{color:#c4ced8;border-color:#6a7a8a;background:#24282c}.phase.admin,#nowPhase.admin{color:#cfc8d6;border-color:#7a6e86;background:#28242c}.phase.stop,#nowPhase.stop{color:#c8c4bc;border-color:#6a6660;background:#222220}
+.form input,.form select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:16px;margin:6px 0 10px;color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.chip{border:1px solid var(--line);background:var(--panel-2);color:var(--text);border-radius:99px;padding:6px 10px;font-size:12px}.chip.on{border-color:var(--gold-dim);color:var(--gold)}
+.actions,.row-btns{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+button{font:inherit;color:var(--text)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px;min-height:48px;font-size:12px;line-height:1.2}
+.btn.gold{border-color:#8a7349;color:#d4c4a8;background:#26221c;flex:1}.btn.go{border-color:#5a7a66;color:#c5d9cc;background:#222825;flex:1}.btn.pause{border-color:#8a6a76;color:#d4c4cc;background:#2a2428;flex:1}.btn.adm{border-color:#7a6e86;color:#cfc8d6;background:#28242c;flex:1}.btn.setup{border-color:#8a7350;color:#d4c4a8;background:#2a2620;flex:1}.btn.stop{border-color:#8a5a5a;color:#d4c4c4;background:#2a2222;flex:1}.btn.adj{border-color:#6a8a72;color:#c8d4cc;background:#222824;flex:1}.btn.full{width:100%}
+.btn.tech{border-color:#6a7a8a;color:#c4ced8;background:#24282c;flex:1}.btn.sm{min-height:42px;font-size:12px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.kpi{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px}.kpi b{display:block;font-size:12px}
+.kpi.tap{cursor:pointer}
+.kpi.live-setup{border-color:#8a7350;background:#2a2620}.kpi.live-prod{border-color:#5a7a66;background:#222825}.kpi.live-pause{border-color:#8a6a76;background:#2a2428}.kpi.live-support{border-color:#6a7a8a;background:#24282c}.kpi.live-admin{border-color:#7a6e86;background:#28242c}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px}.tag.ok{background:#1a2e22;color:#cfe8d6}.tag.warn{background:#2a2316;color:#e6d3a8}.tag.bad{background:#2c1b1b;color:#e8c4c4}
+h2{font-size:12px;color:var(--muted);text-transform:uppercase}
+table.an{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:12px}
+table.an th,table.an td{border:1px solid #2a2e32;padding:6px 7px;text-align:left;vertical-align:top}
+table.an th{font-weight:600;font-size:11px;text-transform:uppercase}
+table.an td.num{white-space:nowrap}
+table.an .c,table.an th.c{background:#14532d;color:#4ade80}
+table.an .o,table.an th.o{background:#0c4a6e;color:#38bdf8}
+table.an .s,table.an th.s{background:#713f12;color:#fbbf24}
+table.an.prop th,table.an.prop td{background:#2a2226;color:#d4b4bc;border-color:#4a3a42}
+table.an.prop b{color:#e8c8d0}
+table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4;border-color:#3a4652}
+.ttl{margin:10px 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+.ttl.c{color:#4ade80}.ttl.o{color:#8eb4d0}.ttl.s{color:#fbbf24}.ttl.p{color:#d4b4bc}
+#adjBox{padding:8px 10px}
+#adjBox .lab{margin:0}
+#adjBox input{margin:0;padding:8px 10px}
+.adj-row{display:grid;grid-template-columns:108px 1fr;gap:6px;align-items:center;margin:3px 0}
+.adj-acts{margin:8px 0 0;flex-wrap:nowrap;gap:6px}
+.adj-acts .btn{min-height:42px;padding:8px 4px;flex:1}
+</style></head><body>
+<header><h1>Pointeuse OF</h1><div class="clock" id="clock"></div></header>
+<nav>
+<button class="on" data-s="lot">Lot</button><button data-s="journal">Journal</button><button data-s="refs">Réfs</button><button data-s="analyse">Analyse</button><button data-s="perso">Perso</button>
+</nav>
+<main>
+<section class="screen on" id="screen-lot">
+<div class="now" id="nowBox">
+<div class="lab">En cours</div>
+<div id="nowTitle" style="font-size:12px;margin:4px 0"></div>
+<div class="big" id="nowTime">00:00:00</div>
+<div class="meta" id="nowMeta"></div>
+<div class="phase" id="nowPhase" style="display:none"></div>
+<div class="split" id="nowSplit" style="display:none">
+<div class="kpi tap" id="kpiSetup" data-ph="setup"><div class="lab">Mise en route</div><b id="kSetup">00:00:00</b></div>
+<div class="kpi tap" id="kpiProd" data-ph="prod"><div class="lab">Production</div><b id="kProd">00:00:00</b></div>
+<div class="kpi tap" id="kpiPause" data-ph="pause"><div class="lab">Pause</div><b id="kPause">00:00:00</b></div>
+<div class="kpi tap" id="kpiSupport" data-ph="support"><div class="lab">Support</div><b id="kSupport">00:00:00</b></div>
+<div class="kpi tap" id="kpiAdmin" data-ph="admin"><div class="lab">Admin</div><b id="kAdmin">00:00:00</b></div>
+<div class="kpi" id="kpiWork"><div class="lab">Total travail</div><b id="kWork">00:00:00</b></div>
+</div></div>
+<div id="startBox" class="form">
+<div class="lab">Numéro</div><input id="ofIn" inputmode="numeric" placeholder="OF"/>
+<div class="lab">Réf</div><div class="chips" id="refChips"></div>
+<input id="refIn" inputmode="numeric" placeholder="Réf"/>
+<div class="lab">Quantité du lot</div><input id="qtyIn" type="number" min="1" inputmode="numeric"/>
+<div class="lab">TE — temps pièce cible (h)</div><input id="teIn" inputmode="decimal"/>
+<div class="lab">TP — temps mise en route cible (h)</div><input id="tpIn" inputmode="decimal"/>
+<button class="btn gold full" id="btnStart">Démarrer mise en route</button>
+<button class="btn go full" id="btnStartProd" style="margin-top:8px">Démarrer en production</button>
+</div>
+<div id="runBox" style="display:none">
+<div class="actions">
+<button class="btn adj" id="btnAdjNow">Ajuster les temps</button>
+<button class="btn gold" id="btnHalt">Arrêt</button>
+<button class="btn stop" id="btnEnd">Terminer le lot</button>
+</div>
+</div>
+<div id="adjBox" class="form" style="display:none">
+<div class="lab" id="adjTitle">Ajuster · Temps en minutes</div>
+<div class="adj-row"><div class="lab">Mise en route</div><input id="adjSetup" inputmode="numeric"/></div>
+<div class="adj-row"><div class="lab">Production</div><input id="adjProd" inputmode="numeric"/></div>
+<div class="adj-row"><div class="lab">Pause</div><input id="adjPause" inputmode="numeric"/></div>
+<div class="adj-row"><div class="lab">Support</div><input id="adjSupport" inputmode="numeric"/></div>
+<div class="adj-row"><div class="lab">Admin</div><input id="adjAdmin" inputmode="numeric"/></div>
+<div class="actions adj-acts"><button class="btn go" id="btnAdjPlus">+ Ajouter</button><button class="btn stop" id="btnAdjMinus">− Retirer</button><button class="btn" id="btnAdjCancel">Fermer</button></div>
+</div>
+</section>
+<section class="screen" id="screen-journal">
+<div class="actions"><button class="btn gold" id="btnCsv">Exporter CSV</button><button class="btn" id="btnBak">Sauvegarder JSON</button><button class="btn" id="btnImp">Importer</button></div>
+<input type="file" id="bakFile" accept="application/json,.json" style="display:none"/>
+<div id="journal"></div>
+</section>
+<section class="screen" id="screen-refs">
+<div class="form"><input id="newRef" inputmode="numeric" placeholder="Nouvelle réf"/><button class="btn gold full" id="btnAddRef">Ajouter la réf</button></div>
+<div id="refList"></div>
+</section>
+<section class="screen" id="screen-analyse"><p class="hint">Vert = cible. Bleu = observé. Or = stats. Rose doux = proposition. Bleu doux = détail OF.</p><div id="analyse"></div></section>
+<section class="screen" id="screen-perso">
+<p class="hint">Perso. Base 40 h. Semaine lun–ven.</p>
+<div class="form">
+<div class="lab">Jour</div><select id="presDay"></select>
+<div class="lab">Présence (h)</div><input id="presIn" inputmode="decimal"/>
+<button class="btn gold full" id="btnPres">Valider la présence</button>
+<button class="btn full" id="btnConge" style="margin-top:8px">Marquer congé</button>
+</div>
+<div id="persoDay"></div><h2>Semaine</h2><div id="persoWeek"></div>
+</section>
+</main>
+<script src="pointeuse.js"></script>
+</body></html>
