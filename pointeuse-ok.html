@@ -29,16 +29,15 @@ button{font:inherit;color:var(--text)}
 .tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px}.tag.ok{background:#1a2e22;color:#cfe8d6}.tag.warn{background:#2a2316;color:#e6d3a8}.tag.bad{background:#2c1b1b;color:#e8c4c4}
 h2{font-size:12px;color:var(--muted);text-transform:uppercase}
 table.an{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:12px}
-table.an th,table.an td{border:1px solid #2a2e32;padding:6px 7px;text-align:left}
+table.an th,table.an td{border:1px solid #2a2e32;padding:6px 7px}
 table.an .c,table.an th.c{background:#14532d;color:#4ade80}
 table.an .o,table.an th.o{background:#0c4a6e;color:#38bdf8}
 table.an .s,table.an th.s{background:#713f12;color:#fbbf24}
-table.an.prop th,table.an.prop td{background:#2a2226;color:#d4b4bc;border-color:#4a3a42}
-table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4;border-color:#3a4652}
-.ttl{margin:10px 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
-.ttl.o{color:#8eb4d0}.ttl.p{color:#d4b4bc}
+table.an.prop th,table.an.prop td{background:#2a2226;color:#d4b4bc}
+table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4}
+.ttl{margin:10px 0 4px;font-size:11px;text-transform:uppercase;font-weight:700}
 .adj-row{display:grid;grid-template-columns:108px 1fr;gap:6px;align-items:center;margin:3px 0}
-.adj-acts{margin:8px 0 0;flex-wrap:nowrap;gap:6px}.adj-acts .btn{min-height:42px;padding:8px 4px;flex:1}
+.adj-acts{margin:8px 0 0;display:flex;gap:6px}.adj-acts .btn{min-height:42px;padding:8px 4px;flex:1}
 </style></head><body>
 <header><h1>Pointeuse OF — copie</h1><div class="clock" id="clock"></div></header>
 <nav>
@@ -84,7 +83,7 @@ table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4;border-color:#3
 <section class="screen" id="screen-refs">
 <div class="form"><input id="newRef" inputmode="numeric" placeholder="Nouvelle réf"/><button class="btn gold full" id="btnAddRef">Ajouter la réf</button></div>
 <div id="refList"></div></section>
-<section class="screen" id="screen-analyse"><p class="hint">Copie figée — sans familles.</p><div id="analyse"></div></section>
+<section class="screen" id="screen-analyse"><p class="hint">Copie figée sans familles.</p><div id="analyse"></div></section>
 <section class="screen" id="screen-perso">
 <p class="hint">Perso. Base 40 h.</p>
 <div class="form"><div class="lab">Jour</div><select id="presDay"></select>
@@ -93,5 +92,5 @@ table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4;border-color:#3
 <button class="btn full" id="btnConge" style="margin-top:8px">Marquer congé</button></div>
 <div id="persoDay"></div><h2>Semaine</h2><div id="persoWeek"></div></section>
 </main>
-<script src="pointeuse-ok.js"></script>
+<script src="https://raw.githubusercontent.com/loicm25ap/applications/cf6a64487753981bb0e1f11182e62b7ca3fc1f80/pointeuse.js"></script>
 </body></html>
