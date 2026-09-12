@@ -36,7 +36,6 @@ table.an .s,table.an th.s{background:#713f12;color:#fbbf24}
 table.an.prop th,table.an.prop td{background:#2a2226;color:#d4b4bc}
 table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4}
 .ttl{margin:10px 0 4px;font-size:11px;text-transform:uppercase;font-weight:700}
-.ttl.o{color:#8eb4d0}.ttl.p{color:#d4b4bc}
 .adj-row{display:grid;grid-template-columns:108px 1fr;gap:6px;align-items:center;margin:3px 0}
 .adj-acts{margin:8px 0 0;display:flex;gap:6px}.adj-acts .btn{min-height:42px;padding:8px 4px;flex:1}
 </style></head><body>
@@ -84,7 +83,7 @@ table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4}
 <section class="screen" id="screen-refs">
 <div class="form"><input id="newRef" inputmode="numeric" placeholder="Nouvelle réf"/><button class="btn gold full" id="btnAddRef">Ajouter la réf</button></div>
 <div id="refList"></div></section>
-<section class="screen" id="screen-analyse"><p class="hint">Les réfs d’une famille sont regroupées. TE/TP cible = dernier saisi du groupe.</p><div id="analyse"></div></section>
+<section class="screen" id="screen-analyse"><p class="hint">Vert = cible. Bleu = observé. Chronos tels que badgés.</p><div id="analyse"></div></section>
 <section class="screen" id="screen-perso">
 <p class="hint">Perso. Base 40 h.</p>
 <div class="form"><div class="lab">Jour</div><select id="presDay"></select>
@@ -93,6 +92,5 @@ table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4}
 <button class="btn full" id="btnConge" style="margin-top:8px">Marquer congé</button></div>
 <div id="persoDay"></div><h2>Semaine</h2><div id="persoWeek"></div></section>
 </main>
-<script src="pointeuse.js"></script>
-<script src="pointeuse-ui.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/loicm25ap/applications@cf6a64487753981bb0e1f11182e62b7ca3fc1f80/pointeuse.js"></script>
 </body></html>
