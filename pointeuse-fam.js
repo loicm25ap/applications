@@ -86,15 +86,15 @@ renderRefs=function(){
 function feuClass(p){
   if(p==null||!isFinite(p))return"feu-na";
   const a=Math.abs(p);
-  if(a<0.10)return"feu-ok";
-  if(a<0.20)return"feu-warn";
+  if(a<0.15)return"feu-ok";
+  if(a<0.25)return"feu-warn";
   return"feu-bad";
 }
 function feuLabel(p){
   if(p==null||!isFinite(p))return"n/c";
   const a=Math.abs(p);
-  if(a<0.10)return"Proche";
-  if(a<0.20)return"Écart modéré";
+  if(a<0.15)return"Proche";
+  if(a<0.25)return"Écart modéré";
   return"Éloigné";
 }
 function feuGlobal(x){
