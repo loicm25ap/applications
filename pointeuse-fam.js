@@ -86,15 +86,15 @@ renderRefs=function(){
 function feuClass(p){
   if(p==null||!isFinite(p))return"feu-na";
   const a=Math.abs(p);
-  if(a<0.10)return"feu-ok";
-  if(a<0.20)return"feu-warn";
+  if(a<=0.20)return"feu-ok";
+  if(a<=0.35)return"feu-warn";
   return"feu-bad";
 }
 function feuLabel(p){
   if(p==null||!isFinite(p))return"n/c";
   const a=Math.abs(p);
-  if(a<0.10)return"Proche";
-  if(a<0.20)return"Écart modéré";
+  if(a<=0.20)return"Proche";
+  if(a<=0.35)return"Écart modéré";
   return"Éloigné";
 }
 function feuGlobal(totalPct){
@@ -140,7 +140,7 @@ renderAnalyse=function(){
     const div=document.createElement("div");div.className="card feu-card "+feu.cls;
     let html="<div class='feu-head'><span class='feu-dot "+feu.cls+"'></span><b>"+x.title+"</b> · "+x.lots.length+" OF · "+qty+" p.</div>";
     html+="<div class='feu-lab'>"+feu.lab+" · total réel "+hNum(totalObs)+" h / cible "+hNum(totalCible)+" h</div>";
-    html+="<div class='hint'>Feu = écart du temps total (route + prod) vs TP + TE × qté. Vert <10 %, orange <20 %, rouge ≥20 %.</div>";
+    html+="<div class='hint'>Feu = écart du temps total (route + prod) vs TP + TE × qté. Vert ≤20 %, orange 21–35 %, rouge ≥36 %.</div>";
     html+="<div class='hint'>Cible groupe (dernier saisi) · TE "+hNum(last.te)+" h · TP "+hNum(last.tp)+" h</div>";
     html+="<div class='hint'>Observé corrigé : route − 1 TE, prod + 1 TE, pièce = prod ÷ qté</div>";
     html+="<div class='ttl'>Cible / observé / stats</div><table class='an'><tr><th></th><th class='c'>Cible</th><th class='o'>Observé</th><th class='o'>Écart</th><th class='s'>Stat</th></tr>";
