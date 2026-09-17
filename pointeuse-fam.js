@@ -81,6 +81,31 @@ renderRefs=function(){
     };
   });
 };
+
+/* === FEU TRICOLORE === */
+function feuClass(p){
+  if(p==null||!isFinite(p))return"feu-na";
+  const a=Math.abs(p);
+  if(a<0.10)return"feu-ok";
+  if(a<0.20)return"feu-warn";
+  return"feu-bad";
+}
+function feuLabel(p){
+  if(p==null||!isFinite(p))return"n/c";
+  const a=Math.abs(p);
+  if(a<0.10)return"Proche";
+  if(a<0.20)return"Écart modéré";
+  return"Éloigné";
+}
+function feuGlobal(x){
+  const vals=[x.routePct,x.prodPct,x.piecePct].filter(v=>v!=null&&isFinite(v));
+  if(!vals.length)return{cls:"feu-na",lab:"n/c",score:null};
+  const worst=Math.max(...vals.map(v=>Math.abs(v)));
+  const avg=vals.reduce((s,v)=>s+Math.abs(v),0)/vals.length;
+  const score=worst*0.6+avg*0.4;
+  return{cls:feuClass(score),lab:feuLabel(score),score:score};
+}
+
 renderAnalyse=function(){
   const times=analyseTimes;
   const by={};
@@ -109,14 +134,19 @@ renderAnalyse=function(){
     const bufPieces=x.lots.filter(o=>o.l.qty).map(o=>(o.t.n.prod+30*60000)/o.l.qty);
     const midBuf=median(bufPieces),propTe=midBuf!=null?ceilH2(midBuf):null;
     const propTpH=midSetup!=null?ceilH05(midSetup):0;
-    const div=document.createElement("div");div.className="card";
-    let html="<div><b>"+x.title+"</b> · "+x.lots.length+" OF · "+qty+" p.</div>";
+    const routePct=pct(setupSum,cibleRoute);
+    const prodPct=pct(prodSum,cibleProd);
+    const piecePct=pct(mid,last.te);
+    const feu=feuGlobal({routePct:routePct,prodPct:prodPct,piecePct:piecePct});
+    const div=document.createElement("div");div.className="card feu-card "+feu.cls;
+    let html="<div class='feu-head'><span class='feu-dot "+feu.cls+"'></span><b>"+x.title+"</b> · "+x.lots.length+" OF · "+qty+" p.</div>";
+    html+="<div class='feu-lab'>"+feu.lab+"</div>";
     html+="<div class='hint'>Cible groupe (dernier saisi) · TE "+hNum(last.te)+" h · TP "+hNum(last.tp)+" h</div>";
     html+="<div class='hint'>Observé corrigé : route − 1 TE, prod + 1 TE, pièce = prod ÷ qté</div>";
     html+="<div class='ttl'>Cible / observé / stats</div><table class='an'><tr><th></th><th class='c'>Cible</th><th class='o'>Observé</th><th class='o'>Écart</th><th class='s'>Stat</th></tr>";
-    html+="<tr><td>Route TP</td><td class='c num'>"+hNum(cibleRoute)+" h</td><td class='o num'>"+hNum(setupSum)+" h</td><td class='o'><span class='tag "+tagFor(pct(setupSum,cibleRoute))+"'>"+pctTxt(pct(setupSum,cibleRoute))+"</span></td><td class='s num'>"+(midSetup==null?"n/c":hNum(midSetup)+" h")+"</td></tr>";
-    html+="<tr><td>Prod TE×qté</td><td class='c num'>"+hNum(cibleProd)+" h</td><td class='o num'>"+hNum(prodSum)+" h</td><td class='o'><span class='tag "+tagFor(pct(prodSum,cibleProd))+"'>"+pctTxt(pct(prodSum,cibleProd))+"</span></td><td class='s num'>"+(mid==null?"n/c":hNum(mid)+" h/p")+"</td></tr>";
-    html+="<tr><td>Temps pièce</td><td class='c num'>"+hNum(last.te)+" h</td><td class='o num'>"+(mid==null?"n/c":hNum(mid)+" h")+"</td><td class='o'><span class='tag "+tagFor(pct(mid,last.te))+"'>"+pctTxt(pct(mid,last.te))+"</span></td><td class='s num'>"+(midTe==null?"n/c":hNum(midTe)+" h")+"</td></tr></table>";
+    html+="<tr><td>Route TP</td><td class='c num'>"+hNum(cibleRoute)+" h</td><td class='o num'>"+hNum(setupSum)+" h</td><td class='o'><span class='tag "+tagFor(routePct)+"'>"+pctTxt(routePct)+"</span></td><td class='s num'>"+(midSetup==null?"n/c":hNum(midSetup)+" h")+"</td></tr>";
+    html+="<tr><td>Prod TE×qté</td><td class='c num'>"+hNum(cibleProd)+" h</td><td class='o num'>"+hNum(prodSum)+" h</td><td class='o'><span class='tag "+tagFor(prodPct)+"'>"+pctTxt(prodPct)+"</span></td><td class='s num'>"+(mid==null?"n/c":hNum(mid)+" h/p")+"</td></tr>";
+    html+="<tr><td>Temps pièce</td><td class='c num'>"+hNum(last.te)+" h</td><td class='o num'>"+(mid==null?"n/c":hNum(mid)+" h")+"</td><td class='o'><span class='tag "+tagFor(piecePct)+"'>"+pctTxt(piecePct)+"</span></td><td class='s num'>"+(midTe==null?"n/c":hNum(midTe)+" h")+"</td></tr></table>";
     html+="<div class='ttl p'>Proposition</div><table class='an prop'><tr><th>TE pièce</th><th>TP route</th></tr><tr><td>"+(propTe==null?"n/c":propTe.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+" h")+"</td><td>"+propTpH.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2})+" h</td></tr></table>";
     html+="<div class='ttl o'>Détail par OF</div><table class='an det'><tr><th>OF</th><th>Réf</th><th>Qté</th><th>Route</th><th>Pièce</th></tr>";
     x.lots.slice().sort((a,b)=>b.l.started-a.l.started).forEach(o=>{
