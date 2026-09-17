@@ -41,6 +41,18 @@ table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4}
 .ttl{margin:10px 0 4px;font-size:11px;text-transform:uppercase;font-weight:700}
 .adj-row{display:grid;grid-template-columns:108px 1fr;gap:6px;align-items:center;margin:3px 0}
 .adj-acts{margin:8px 0 0;display:flex;gap:6px}.adj-acts .btn{min-height:42px;padding:8px 4px;flex:1}
+.feu-card{border-left:4px solid var(--line)}
+.feu-card.feu-ok{border-left-color:#4ade80}
+.feu-card.feu-warn{border-left-color:#fbbf24}
+.feu-card.feu-bad{border-left-color:#f87171}
+.feu-card.feu-na{border-left-color:#6a6660}
+.feu-head{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.feu-dot{width:12px;height:12px;border-radius:50%;flex:none}
+.feu-dot.feu-ok{background:#4ade80;box-shadow:0 0 8px #4ade80}
+.feu-dot.feu-warn{background:#fbbf24;box-shadow:0 0 8px #fbbf24}
+.feu-dot.feu-bad{background:#f87171;box-shadow:0 0 8px #f87171}
+.feu-dot.feu-na{background:#6a6660}
+.feu-lab{font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
 </style></head><body>
 <header><h1>Pointeuse OF</h1><div class="clock" id="clock"></div></header>
 <nav>
@@ -86,7 +98,7 @@ table.an.det th,table.an.det td{background:#1e242c;color:#b4c4d4}
 <section class="screen" id="screen-refs">
 <div class="form"><input id="newRef" inputmode="numeric" placeholder="Nouvelle réf"/><button class="btn gold full" id="btnAddRef">Ajouter la réf</button></div>
 <div id="refList"></div></section>
-<section class="screen" id="screen-analyse"><p class="hint">Familles dans Réfs. Analyse groupée. Route − 1 TE. Mêmes données.</p><div id="analyse"></div></section>
+<section class="screen" id="screen-analyse"><p class="hint">Familles dans Réfs. Analyse groupée. Route − 1 TE. Feu = écart global TE/TP.</p><div id="analyse"></div></section>
 <section class="screen" id="screen-perso">
 <p class="hint">Perso. Base 40 h.</p>
 <div class="form"><div class="lab">Jour</div><select id="presDay"></select>
