@@ -82,28 +82,24 @@ renderRefs=function(){
   });
 };
 
-/* === FEU TRICOLORE === */
+/* === FEU : temps total lot vs cible logistique TP + TE×qté === */
 function feuClass(p){
   if(p==null||!isFinite(p))return"feu-na";
   const a=Math.abs(p);
-  if(a<0.15)return"feu-ok";
-  if(a<0.25)return"feu-warn";
+  if(a<0.10)return"feu-ok";
+  if(a<0.20)return"feu-warn";
   return"feu-bad";
 }
 function feuLabel(p){
   if(p==null||!isFinite(p))return"n/c";
   const a=Math.abs(p);
-  if(a<0.15)return"Proche";
-  if(a<0.25)return"Écart modéré";
+  if(a<0.10)return"Proche";
+  if(a<0.20)return"Écart modéré";
   return"Éloigné";
 }
-function feuGlobal(x){
-  const vals=[x.routePct,x.prodPct,x.piecePct].filter(v=>v!=null&&isFinite(v));
-  if(!vals.length)return{cls:"feu-na",lab:"n/c",score:null};
-  const worst=Math.max(...vals.map(v=>Math.abs(v)));
-  const avg=vals.reduce((s,v)=>s+Math.abs(v),0)/vals.length;
-  const score=worst*0.6+avg*0.4;
-  return{cls:feuClass(score),lab:feuLabel(score),score:score};
+function feuGlobal(totalPct){
+  if(totalPct==null||!isFinite(totalPct))return{cls:"feu-na",lab:"n/c",score:null};
+  return{cls:feuClass(totalPct),lab:feuLabel(totalPct)+" · "+pctTxt(totalPct),score:totalPct};
 }
 
 renderAnalyse=function(){
@@ -137,13 +133,18 @@ renderAnalyse=function(){
     const routePct=pct(setupSum,cibleRoute);
     const prodPct=pct(prodSum,cibleProd);
     const piecePct=pct(mid,last.te);
-    const feu=feuGlobal({routePct:routePct,prodPct:prodPct,piecePct:piecePct});
+    const totalObs=setupSum+prodSum;
+    const totalCible=cibleRoute+cibleProd;
+    const totalPct=pct(totalObs,totalCible);
+    const feu=feuGlobal(totalPct);
     const div=document.createElement("div");div.className="card feu-card "+feu.cls;
     let html="<div class='feu-head'><span class='feu-dot "+feu.cls+"'></span><b>"+x.title+"</b> · "+x.lots.length+" OF · "+qty+" p.</div>";
-    html+="<div class='feu-lab'>"+feu.lab+"</div>";
+    html+="<div class='feu-lab'>"+feu.lab+" · total réel "+hNum(totalObs)+" h / cible "+hNum(totalCible)+" h</div>";
+    html+="<div class='hint'>Feu = écart du temps total (route + prod) vs TP + TE × qté. Vert <10 %, orange <20 %, rouge ≥20 %.</div>";
     html+="<div class='hint'>Cible groupe (dernier saisi) · TE "+hNum(last.te)+" h · TP "+hNum(last.tp)+" h</div>";
     html+="<div class='hint'>Observé corrigé : route − 1 TE, prod + 1 TE, pièce = prod ÷ qté</div>";
     html+="<div class='ttl'>Cible / observé / stats</div><table class='an'><tr><th></th><th class='c'>Cible</th><th class='o'>Observé</th><th class='o'>Écart</th><th class='s'>Stat</th></tr>";
+    html+="<tr><td>Total lot</td><td class='c num'>"+hNum(totalCible)+" h</td><td class='o num'>"+hNum(totalObs)+" h</td><td class='o'><span class='tag "+tagFor(totalPct)+"'>"+pctTxt(totalPct)+"</span></td><td class='s num'></td></tr>";
     html+="<tr><td>Route TP</td><td class='c num'>"+hNum(cibleRoute)+" h</td><td class='o num'>"+hNum(setupSum)+" h</td><td class='o'><span class='tag "+tagFor(routePct)+"'>"+pctTxt(routePct)+"</span></td><td class='s num'>"+(midSetup==null?"n/c":hNum(midSetup)+" h")+"</td></tr>";
     html+="<tr><td>Prod TE×qté</td><td class='c num'>"+hNum(cibleProd)+" h</td><td class='o num'>"+hNum(prodSum)+" h</td><td class='o'><span class='tag "+tagFor(prodPct)+"'>"+pctTxt(prodPct)+"</span></td><td class='s num'>"+(mid==null?"n/c":hNum(mid)+" h/p")+"</td></tr>";
     html+="<tr><td>Temps pièce</td><td class='c num'>"+hNum(last.te)+" h</td><td class='o num'>"+(mid==null?"n/c":hNum(mid)+" h")+"</td><td class='o'><span class='tag "+tagFor(piecePct)+"'>"+pctTxt(piecePct)+"</span></td><td class='s num'>"+(midTe==null?"n/c":hNum(midTe)+" h")+"</td></tr></table>";
