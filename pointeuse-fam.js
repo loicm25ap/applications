@@ -118,6 +118,15 @@ function feuGlobal(totalPct){
   return{cls:feuClass(totalPct),lab:feuLabel(totalPct)+" · "+pctTxt(totalPct),score:totalPct};
 }
 
+function linearRegression(xs,ys){
+  const n=xs.length;if(n<2)return null;
+  let sx=0,sy=0,sxx=0,sxy=0;
+  for(let i=0;i<n;i++){sx+=xs[i];sy+=ys[i];sxx+=xs[i]*xs[i];sxy+=xs[i]*ys[i];}
+  const den=n*sxx-sx*sx;if(Math.abs(den)<1e-9)return null;
+  const a=(n*sxy-sx*sy)/den; // slope
+  const b=(sy-a*sx)/n;       // intercept
+  return{a,b};
+}
 function estimateByPositions(targetPos){
   const groups={};
   db.lots.forEach(l=>{
@@ -132,18 +141,33 @@ function estimateByPositions(targetPos){
   });
   const keys=Object.keys(groups).map(Number).sort((a,b)=>a-b);
   if(!keys.length)return null;
+  // points for regression (median per position)
+  const xs=[],tps=[],tes=[];
+  keys.forEach(k=>{
+    const g=groups[k];
+    const tp=median(g.setups),te=median(g.pieces);
+    if(tp!=null){xs.push(k);tps.push(tp);}
+    if(te!=null)tes.push({x:k,y:te});
+  });
+  const regTp=linearRegression(xs,tps);
+  const regTe=tes.length>=2?linearRegression(tes.map(p=>p.x),tes.map(p=>p.y)):null;
+  if(regTp||regTe){
+    const tp=regTp?Math.max(0,regTp.a*targetPos+regTp.b):null;
+    const te=regTe?Math.max(0,regTe.a*targetPos+regTe.b):null;
+    return{method:"regression",tp,te,regTp,regTe,nPoints:keys.length};
+  }
+  // fallback nearest
   if(groups[targetPos]){
     const g=groups[targetPos];
-    return{pos:targetPos,tp:median(g.setups),te:median(g.pieces),n:g.count,exact:true};
+    return{method:"exact",pos:targetPos,tp:median(g.setups),te:median(g.pieces),n:g.count};
   }
-  // nearest
   let best=keys[0],bestD=Math.abs(keys[0]-targetPos);
   keys.forEach(k=>{
     const d=Math.abs(k-targetPos);
     if(d<bestD){best=k;bestD=d;}
   });
   const g=groups[best];
-  return{pos:best,tp:median(g.setups),te:median(g.pieces),n:g.count,exact:false,dist:bestD};
+  return{method:"nearest",pos:best,tp:median(g.setups),te:median(g.pieces),n:g.count,dist:bestD};
 }
 
 renderAnalyse=function(){
@@ -204,7 +228,7 @@ renderAnalyse=function(){
   /* === Estimation par positions === */
   const posBox=document.createElement("div");posBox.className="card";
   let phtml="<div class='ttl'>Estimation par nombre de positions</div>";
-  phtml+="<p class='hint'>Basé sur les lots terminés dont la réf a un nombre de positions. Temps corrigés (route − 1 TE).</p>";
+  phtml+="<p class='hint'>Régression linéaire dès que possible (interpolation / extrapolation). Sinon médiane du plus proche. Temps corrigés.</p>";
   const groups={};
   db.lots.forEach(l=>{
     const pos=db.positions[l.ref];
@@ -229,7 +253,7 @@ renderAnalyse=function(){
   }
   phtml+="<div class='lab' style='margin-top:10px'>Estimer pour une future pièce</div>";
   phtml+="<input id='estPos' type='number' min='1' step='1' inputmode='numeric' placeholder='Nombre de positions'/>";
-  phtml+="<div id='estResult' class='hint' style='margin-top:6px'></div>";
+  phtml+="<div id='estResult' class='hint' style='margin-top:6px;white-space:pre-wrap'></div>";
   posBox.innerHTML=phtml;
   box.appendChild(posBox);
   const estIn=posBox.querySelector("#estPos");
@@ -240,9 +264,18 @@ renderAnalyse=function(){
       if(!v||v<=0){estRes.textContent="";return;}
       const est=estimateByPositions(v);
       if(!est){estRes.textContent="Pas assez de données.";return;}
-      let txt=est.exact?"Données exactes ("+est.n+" lots)" : "Plus proche : "+est.pos+" positions ("+est.n+" lots, écart "+est.dist+")";
-      txt+="\nTP estimé : "+(est.tp!=null?hNum(est.tp)+" h":"n/c");
-      txt+="\nTE/pièce estimé : "+(est.te!=null?hNum(est.te)+" h":"n/c");
+      let txt="";
+      if(est.method==="regression"){
+        txt="Régression linéaire ("+est.nPoints+" points)\n";
+        if(est.regTp)txt+="TP ≈ "+est.regTp.a.toFixed(3)+" × positions + "+est.regTp.b.toFixed(3)+" h\n";
+        if(est.regTe)txt+="TE ≈ "+est.regTe.a.toFixed(3)+" × positions + "+est.regTe.b.toFixed(3)+" h\n";
+      }else if(est.method==="exact"){
+        txt="Données exactes ("+est.n+" lots)\n";
+      }else{
+        txt="Plus proche : "+est.pos+" positions ("+est.n+" lots, écart "+est.dist+")\n";
+      }
+      txt+="TP estimé : "+(est.tp!=null?hNum(est.tp)+" h":"n/c")+"\n";
+      txt+="TE/pièce estimé : "+(est.te!=null?hNum(est.te)+" h":"n/c");
       estRes.textContent=txt;
     };
   }
