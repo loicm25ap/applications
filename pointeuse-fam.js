@@ -118,6 +118,34 @@ function feuGlobal(totalPct){
   return{cls:feuClass(totalPct),lab:feuLabel(totalPct)+" · "+pctTxt(totalPct),score:totalPct};
 }
 
+function estimateByPositions(targetPos){
+  const groups={};
+  db.lots.forEach(l=>{
+    const pos=db.positions[l.ref];
+    if(pos==null||!isFinite(pos))return;
+    const t=analyseTimes(l);
+    if(t.n.setup<=0&&(t.piece==null||t.piece<=0))return;
+    if(!groups[pos])groups[pos]={setups:[],pieces:[],count:0};
+    if(t.n.setup>0)groups[pos].setups.push(t.n.setup);
+    if(t.piece!=null&&t.piece>0)groups[pos].pieces.push(t.piece);
+    groups[pos].count++;
+  });
+  const keys=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  if(!keys.length)return null;
+  if(groups[targetPos]){
+    const g=groups[targetPos];
+    return{pos:targetPos,tp:median(g.setups),te:median(g.pieces),n:g.count,exact:true};
+  }
+  // nearest
+  let best=keys[0],bestD=Math.abs(keys[0]-targetPos);
+  keys.forEach(k=>{
+    const d=Math.abs(k-targetPos);
+    if(d<bestD){best=k;bestD=d;}
+  });
+  const g=groups[best];
+  return{pos:best,tp:median(g.setups),te:median(g.pieces),n:g.count,exact:false,dist:bestD};
+}
+
 renderAnalyse=function(){
   const times=analyseTimes;
   const by={};
@@ -172,5 +200,51 @@ renderAnalyse=function(){
     html+="</table>";
     div.innerHTML=html;box.appendChild(div);
   });
+
+  /* === Estimation par positions === */
+  const posBox=document.createElement("div");posBox.className="card";
+  let phtml="<div class='ttl'>Estimation par nombre de positions</div>";
+  phtml+="<p class='hint'>Basé sur les lots terminés dont la réf a un nombre de positions. Temps corrigés (route − 1 TE).</p>";
+  const groups={};
+  db.lots.forEach(l=>{
+    const pos=db.positions[l.ref];
+    if(pos==null||!isFinite(pos))return;
+    const t=times(l);
+    if(!groups[pos])groups[pos]={setups:[],pieces:[],count:0};
+    if(t.n.setup>0)groups[pos].setups.push(t.n.setup);
+    if(t.piece!=null&&t.piece>0)groups[pos].pieces.push(t.piece);
+    groups[pos].count++;
+  });
+  const pkeys=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  if(pkeys.length){
+    phtml+="<table class='an'><tr><th>Positions</th><th>Lots</th><th>TP méd. (h)</th><th>TE/pièce méd. (h)</th></tr>";
+    pkeys.forEach(p=>{
+      const g=groups[p];
+      const tp=median(g.setups),te=median(g.pieces);
+      phtml+="<tr><td>"+p+"</td><td>"+g.count+"</td><td>"+(tp!=null?hNum(tp):"n/c")+"</td><td>"+(te!=null?hNum(te):"n/c")+"</td></tr>";
+    });
+    phtml+="</table>";
+  }else{
+    phtml+="<p class='hint'>Pas encore assez de données (réfs avec positions + lots faits).</p>";
+  }
+  phtml+="<div class='lab' style='margin-top:10px'>Estimer pour une future pièce</div>";
+  phtml+="<input id='estPos' type='number' min='1' step='1' inputmode='numeric' placeholder='Nombre de positions'/>";
+  phtml+="<div id='estResult' class='hint' style='margin-top:6px'></div>";
+  posBox.innerHTML=phtml;
+  box.appendChild(posBox);
+  const estIn=posBox.querySelector("#estPos");
+  const estRes=posBox.querySelector("#estResult");
+  if(estIn&&estRes){
+    estIn.oninput=()=>{
+      const v=Number(estIn.value);
+      if(!v||v<=0){estRes.textContent="";return;}
+      const est=estimateByPositions(v);
+      if(!est){estRes.textContent="Pas assez de données.";return;}
+      let txt=est.exact?"Données exactes ("+est.n+" lots)" : "Plus proche : "+est.pos+" positions ("+est.n+" lots, écart "+est.dist+")";
+      txt+="\nTP estimé : "+(est.tp!=null?hNum(est.tp)+" h":"n/c");
+      txt+="\nTE/pièce estimé : "+(est.te!=null?hNum(est.te)+" h":"n/c");
+      estRes.textContent=txt;
+    };
+  }
 };
 if(typeof render==="function")render();
