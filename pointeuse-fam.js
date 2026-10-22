@@ -1,4 +1,5 @@
 if(!Array.isArray(db.families))db.families=[];
+if(typeof db.positions!=="object"||db.positions===null)db.positions={};
 function sortRefs(a){return [...a].sort((x,y)=>Number(x)-Number(y)||String(x).localeCompare(String(y)))}
 db.refs=sortRefs(db.refs);
 function famOf(ref){return (db.families||[]).find(f=>(f.refs||[]).includes(ref))}
@@ -19,7 +20,9 @@ renderChips=function(){
   const box=$("refChips");box.innerHTML="";
   sortRefs(db.refs).forEach(r=>{
     const b=document.createElement("button");
-    b.className="chip"+(selRef===r?" on":"");b.textContent=r;
+    b.className="chip"+(selRef===r?" on":"");
+    const pos=db.positions[r];
+    b.textContent=r+(pos!=null&&pos!==""?" ("+pos+")":"");
     b.onclick=()=>{selRef=r;$("refIn").value=r;fillTargets();renderChips()};
     box.appendChild(b);
   });
@@ -34,10 +37,23 @@ renderRefs=function(){
   sortRefs(db.refs).forEach(r=>{
     const card=document.createElement("div");card.className="card";
     const f=famOf(r);
-    card.innerHTML="<b>"+r+"</b>"+(f?" <span class='hint'>· "+(f.name||"famille")+"</span>":"");
+    const pos=db.positions[r];
+    let html="<b>"+r+"</b>"+(f?" <span class='hint'>· "+(f.name||"famille")+"</span>":"");
+    html+="<div class='adj-row' style='margin-top:6px'><div class='lab'>Positions</div><input id='pos_"+r+"' type='number' min='0' step='1' inputmode='numeric' value='"+(pos!=null?pos:"")+"' style='margin:0;padding:8px;font-size:14px'/></div>";
+    card.innerHTML=html;
+    const inp=card.querySelector("#pos_"+r);
+    if(inp){
+      inp.onchange=()=>{
+        const v=inp.value.trim();
+        if(v===""||isNaN(v))delete db.positions[r];
+        else db.positions[r]=Math.max(0,Math.floor(Number(v)));
+        save();render();
+      };
+    }
     const b=document.createElement("button");b.className="btn sm";b.textContent="Retirer";
     b.onclick=()=>{
       db.refs=db.refs.filter(x=>x!==r);
+      delete db.positions[r];
       (db.families||[]).forEach(f=>{f.refs=(f.refs||[]).filter(x=>x!==r)});
       save();render();
     };
